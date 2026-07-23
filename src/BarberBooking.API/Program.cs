@@ -46,6 +46,13 @@ if (!isDesignTime)
 
     if (string.IsNullOrEmpty(dbConnection))
         throw new InvalidOperationException("Database connection string is not configured. Set ConnectionStrings__DefaultConnection environment variable.");
+
+    // Ensure SSL for Supabase connections
+    if (dbConnection.Contains("supabase") && !dbConnection.Contains("SSL Mode"))
+    {
+        dbConnection += ";SSL Mode=Require;Trust Server Certificate=true";
+        builder.Configuration["ConnectionStrings:DefaultConnection"] = dbConnection;
+    }
 }
 
 // --- Application Layer ---
