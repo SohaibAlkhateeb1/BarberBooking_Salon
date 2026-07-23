@@ -1,0 +1,38 @@
+{
+    "name": "BarberBooking - حجز خدمات الحلاقة",
+    "short_name": "BarberBooking",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#121212",
+    "theme_color": "#0DF1B5",
+    "description": "منصة حجز خدمات الحلاقة في فلسطين",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "categories": ["business", "lifestyle"],
+    "lang": "ar",
+    "dir": "rtl",
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

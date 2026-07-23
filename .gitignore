@@ -1,0 +1,64 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstats
+*.userprefs
+
+# User Secrets (DO NOT COMMIT)
+**/Properties/serviceDependencies*.json
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# NuGet
+*.nupkg
+**/packages/*
+*.nuget.props
+*.nuget.targets
+
+# Publish output
+publish/
+
+# Flutter
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/pubspec.lock
+
+# Node (Admin)
+admin/node_modules/
+admin/.next/
+admin/out/
+admin/.env.local
+admin/.env.production
+
+# Logs
+logs/
+*.log
+
+# Database backups
+*.sql.bak
+
+# Firebase (NEVER COMMIT)
+firebase-service-account.json
+
+# Render
+render.yaml.bak
