@@ -1,18 +1,14 @@
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /src
+WORKDIR /app
 
-# Copy solution and project files first for better layer caching
-COPY BarberBooking.sln .
-COPY src/BarberBooking.Domain/BarberBooking.Domain.csproj src/BarberBooking.Domain/
-COPY src/BarberBooking.Application/BarberBooking.Application.csproj src/BarberBooking.Application/
-COPY src/BarberBooking.Infrastructure/BarberBooking.Infrastructure.csproj src/BarberBooking.Infrastructure/
-COPY src/BarberBooking.API/BarberBooking.API.csproj src/BarberBooking.API/
+# Copy everything
+COPY . .
 
-RUN dotnet restore
+# Restore dependencies
+RUN dotnet restore BarberBooking.sln
 
-# Copy everything and publish
-COPY src/ .
+# Publish the API project
 RUN dotnet publish src/BarberBooking.API/BarberBooking.API.csproj -c Release -o /app/publish --no-restore
 
 # Runtime stage
