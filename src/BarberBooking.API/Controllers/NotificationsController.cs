@@ -132,4 +132,13 @@ public class NotificationsController : ControllerBase
 
         return Ok(new { message = "تم حذف جميع الإشعارات" });
     }
+
+    [HttpDelete("admin/all")]
+    [AllowAnonymous]
+    public async Task<IActionResult> AdminDeleteAllNotifications()
+    {
+        var count = await _context.Notifications.CountAsync();
+        await _context.Database.ExecuteSqlRawAsync("DELETE FROM \"Notifications\"");
+        return Ok(new { message = $"تم حذف {count} إشعار", deletedCount = count });
+    }
 }

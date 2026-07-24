@@ -320,7 +320,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasIndex("SubscriptionPlanId");
 
-                    b.ToTable("BarberSubscriptions");
+                    b.ToTable("BarberSubscriptions", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.Booking", b =>
@@ -554,7 +554,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.OtpCode", b =>
@@ -589,7 +589,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("OtpCodes");
+                    b.ToTable("OtpCodes", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.PaymentRequest", b =>
@@ -653,7 +653,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("PaymentRequests");
+                    b.ToTable("PaymentRequests", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.PromoCode", b =>
@@ -707,7 +707,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasIndex("BarberProfileId");
 
-                    b.ToTable("PromoCodes");
+                    b.ToTable("PromoCodes", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.RefreshToken", b =>
@@ -739,7 +739,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.Review", b =>
@@ -797,7 +797,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RevokedTokens");
+                    b.ToTable("RevokedTokens", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.SubscriptionHistory", b =>
@@ -914,7 +914,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SubscriptionPlans");
+                    b.ToTable("SubscriptionPlans", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.SupportTicket", b =>
@@ -993,7 +993,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("SupportTickets");
+                    b.ToTable("SupportTickets", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.SystemAlert", b =>
@@ -1129,7 +1129,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
 
                     b.HasIndex("SupportTicketId");
 
-                    b.ToTable("TicketReplies");
+                    b.ToTable("TicketReplies", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.User", b =>
@@ -1263,7 +1263,7 @@ namespace BarberBooking.Infrastructure.Data.Migrations
                     b.HasIndex("UserId", "FcmToken")
                         .IsUnique();
 
-                    b.ToTable("UserDevices");
+                    b.ToTable("UserDevices", (string)null);
                 });
 
             modelBuilder.Entity("BarberBooking.Domain.Entities.WorkingHour", b =>

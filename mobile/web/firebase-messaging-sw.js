@@ -7,7 +7,7 @@ firebase.initializeApp({
   projectId: 'barber-booking-c5fd6',
   storageBucket: 'barber-booking-c5fd6.firebasestorage.app',
   messagingSenderId: '886432509232',
-  appId: '1:886432509232:web:FIXME_WEB_APP_ID',
+  appId: '1:886432509232:web:8a8e0a6af40252a739ecf5',
 });
 
 const messaging = firebase.messaging();

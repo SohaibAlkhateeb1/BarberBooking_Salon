@@ -21,7 +21,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyD4cpdjsvyDbuGymXUreJtM6xZ5RpbpaU8',
-    appId: '1:886432509232:web:FIXME_WEB_APP_ID',
+    appId: '1:886432509232:web:8a8e0a6af40252a739ecf5',
     messagingSenderId: '886432509232',
     projectId: 'barber-booking-c5fd6',
     storageBucket: 'barber-booking-c5fd6.firebasestorage.app',

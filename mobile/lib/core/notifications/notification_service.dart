@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import '../network/api_client.dart';
 import '../../features/main_shell/presentation/main_shell.dart';
+import 'web_notification_helper.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._();
@@ -17,12 +18,15 @@ class NotificationService {
   final ApiClient _apiClient = ApiClient();
 
   String? _fcmToken;
+  bool _webInitialized = false;
 
   String? get fcmToken => _fcmToken;
 
   Future<void> initialize() async {
     try {
-      if (!kIsWeb) {
+      if (kIsWeb) {
+        await _initWebNotifications();
+      } else {
         await _requestPermission();
         await _initLocalNotifications();
       }
@@ -30,6 +34,17 @@ class NotificationService {
       _setupMessageHandlers();
     } catch (e) {
       print('NotificationService init failed (non-critical): $e');
+    }
+  }
+
+  Future<void> _initWebNotifications() async {
+    if (_webInitialized) return;
+    _webInitialized = true;
+    try {
+      final granted = await WebNotificationHelper.requestPermission();
+      print('Web notification permission granted: $granted');
+    } catch (e) {
+      print('Web notification init error: $e');
     }
   }
 
@@ -73,6 +88,10 @@ class NotificationService {
       _fcmToken = await _messaging.getToken();
       print('FCM Token: $_fcmToken');
 
+      if (_fcmToken != null) {
+        await _saveTokenToBackend(_fcmToken!);
+      }
+
       _messaging.onTokenRefresh.listen((token) {
         _fcmToken = token;
         print('FCM Token refreshed: $token');
@@ -113,16 +132,16 @@ class NotificationService {
     print('Foreground message: ${message.notification?.title}');
 
     if (message.notification != null) {
+      final title = message.notification!.title ?? '';
+      final body = message.notification!.body ?? '';
+
       if (kIsWeb) {
-        _showWebNotification(
-          title: message.notification!.title ?? '',
-          body: message.notification!.body ?? '',
-        );
+        WebNotificationHelper.showNotification(title: title, body: body);
       } else {
         await _showLocalNotification(
           id: message.hashCode,
-          title: message.notification!.title ?? '',
-          body: message.notification!.body ?? '',
+          title: title,
+          body: body,
           data: message.data,
         );
       }
@@ -199,14 +218,5 @@ class NotificationService {
       details,
       payload: jsonEncode(data),
     );
-  }
-
-  void _showWebNotification({required String title, required String body}) {
-    try {
-      _apiClient.dio.get('/api/notifications');
-    } catch (_) {}
-
-    if (title.isEmpty && body.isEmpty) return;
-    print('Web notification: $title - $body');
   }
 }
