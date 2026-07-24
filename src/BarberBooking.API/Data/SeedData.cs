@@ -8,6 +8,25 @@ public static class SeedData
 {
     public static async Task SeedAsync(BarberBookingDbContext context)
     {
+        // ===== ADMIN USER =====
+        if (!await context.Users.AnyAsync(u => u.Role == "Admin"))
+        {
+            var admin = new User
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Admin",
+                PhoneNumber = "0593874920",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Z2003vb!"),
+                Role = "Admin",
+                IsActive = true,
+                IsPhoneVerified = true,
+                PhoneVerificationStatus = "Verified",
+                CreatedAt = DateTime.UtcNow
+            };
+            context.Users.Add(admin);
+            await context.SaveChangesAsync();
+        }
+
         // ===== SUBSCRIPTION PLANS =====
         if (!await context.SubscriptionPlans.AnyAsync())
         {
