@@ -3,6 +3,7 @@ using System;
 using BarberBooking.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BarberBooking.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(BarberBookingDbContext))]
-    partial class BarberBookingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260724105836_AddMissingEntities")]
+    partial class AddMissingEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
