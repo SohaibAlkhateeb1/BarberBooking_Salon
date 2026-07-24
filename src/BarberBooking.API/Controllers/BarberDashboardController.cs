@@ -32,7 +32,7 @@ public class BarberDashboardController : ControllerBase
     {
         var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
         if (string.IsNullOrEmpty(sub))
-            throw new UnauthorizedAccessException("ط؛ظٹط± ظ…طµط±ط­");
+            throw new UnauthorizedAccessException("رقم الخطأ");
         return Guid.Parse(sub);
     }
 
@@ -42,7 +42,7 @@ public class BarberDashboardController : ControllerBase
         var profile = await _context.BarberProfiles
             .FirstOrDefaultAsync(bp => bp.UserId == userId);
         if (profile == null)
-            throw new KeyNotFoundException("ط§ظ„ط­ظ„ط§ظ‚ ط؛ظٹط± ظ…ظˆط¬ظˆط¯");
+            throw new KeyNotFoundException("الحلاق غير موجود");
         return profile;
     }
 
@@ -206,10 +206,10 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == id && b.BarberProfileId == profile.Id);
 
         if (booking == null)
-            return NotFound(new { message = "ط§ظ„ط­ط¬ط² ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الحجز غير موجود" });
 
         if (booking.Status != "Pending")
-            return BadRequest(new { message = "ظ„ط§ ظٹظ…ظƒظ† ظ‚ط¨ظˆظ„ ظ‡ط°ط§ ط§ظ„ط­ط¬ط²" });
+            return BadRequest(new { message = "لا يمكن قبول هذا الحجز" });
 
         booking.Status = "Accepted";
         await _context.SaveChangesAsync();
@@ -217,8 +217,8 @@ public class BarberDashboardController : ControllerBase
         _context.Notifications.Add(new Notification
         {
             UserId = booking.CustomerId,
-            Title = "طھظ… طھط£ظƒظٹط¯ ط§ظ„ظ…ظˆط¹ط¯",
-            Message = $"طھظ… طھط£ظƒظٹط¯ ظ…ظˆط¹ط¯ظƒ â€” {booking.BarberService.Name} ظٹظˆظ… {booking.BookingDate:yyyy-MM-dd} ط§ظ„ط³ط§ط¹ط© {booking.BookingTime:hh\\:mm}",
+            Title = "تم تأكيد الموعد",
+            Message = $"تم تأكيد موعدك — {booking.BarberService.Name} ظٹظˆظ… {booking.BookingDate:yyyy-MM-dd} ط§ظ„الساعة {booking.BookingTime:hh\\:mm}",
             Type = "booking",
             IsRead = false,
             Data = booking.Id.ToString()
@@ -228,8 +228,8 @@ public class BarberDashboardController : ControllerBase
         // Send FCM push notification to customer
         await _fcm.SendToUser(
             booking.CustomerId,
-            "طھظ… طھط£ظƒظٹط¯ ظ…ظˆط¹ط¯ظƒ âœ…",
-            $"طھظ… طھط£ظƒظٹط¯ ظ…ظˆط¹ط¯ظƒ â€” {booking.BarberService.Name} ظٹظˆظ… {booking.BookingDate:yyyy-MM-dd} ط§ظ„ط³ط§ط¹ط© {booking.BookingTime:hh\\:mm}",
+            "تم تأكيد موعدك ",
+            $"تم تأكيد موعدك — {booking.BarberService.Name} ظٹظˆظ… {booking.BookingDate:yyyy-MM-dd} ط§ظ„الساعة {booking.BookingTime:hh\\:mm}",
             new Dictionary<string, string>
             {
                 { "type", "booking_update" },
@@ -237,7 +237,7 @@ public class BarberDashboardController : ControllerBase
                 { "action", "booking_accepted" }
             });
 
-        return Ok(new { message = "طھظ… ظ‚ط¨ظˆظ„ ط§ظ„ط­ط¬ط²" });
+        return Ok(new { message = "تم قبول الحجز" });
     }
 
     [HttpPut("bookings/{id}/reject")]
@@ -251,27 +251,27 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == id && b.BarberProfileId == profile.Id);
 
         if (booking == null)
-            return NotFound(new { message = "ط§ظ„ط­ط¬ط² ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الحجز غير موجود" });
 
         if (booking.Status != "Pending")
-            return BadRequest(new { message = "ظ„ط§ ظٹظ…ظƒظ† ط±ظپط¶ ظ‡ط°ط§ ط§ظ„ط­ط¬ط²" });
+            return BadRequest(new { message = "لا يمكن رفض هذا الحجز" });
 
         booking.Status = "Rejected";
-        booking.CancellationReason = dto?.Reason ?? "طھظ… ط§ظ„ط±ظپط¶ ظ…ظ† ظ‚ط¨ظ„ ط§ظ„ط­ظ„ط§ظ‚";
+        booking.CancellationReason = dto?.Reason ?? "تم الرفض من قبل الحلاق";
         await _context.SaveChangesAsync();
 
         _context.Notifications.Add(new Notification
         {
             UserId = booking.CustomerId,
-            Title = "طھظ… ط±ظپط¶ ط§ظ„ظ…ظˆط¹ط¯",
-            Message = $"طھظ… ط±ظپط¶ ظ…ظˆط¹ط¯ظƒ â€” {booking.BarberService.Name}. ط§ظ„ط³ط¨ط¨: {booking.CancellationReason}",
+            Title = "تم رفض الموعد",
+            Message = $"تم رفض موعدك — {booking.BarberService.Name}. السبب: {booking.CancellationReason}",
             Type = "booking",
             IsRead = false,
             Data = booking.Id.ToString()
         });
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… ط±ظپط¶ ط§ظ„ط­ط¬ط²" });
+        return Ok(new { message = "تم رفض الحجز" });
     }
 
     [HttpPut("bookings/{id}/start")]
@@ -286,10 +286,10 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == id && b.BarberProfileId == profile.Id);
 
         if (booking == null)
-            return NotFound(new { message = "ط§ظ„ط­ط¬ط² ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الحجز غير موجود" });
 
         if (booking.Status != "Accepted")
-            return BadRequest(new { message = "ظ„ط§ ظٹظ…ظƒظ† ط¨ط¯ط، ظ‡ط°ط§ ط§ظ„ط­ط¬ط²" });
+            return BadRequest(new { message = "لا يمكن بدء هذا الحجز" });
 
         booking.Status = "InProgress";
         booking.StartedAt = DateTime.UtcNow;
@@ -300,8 +300,8 @@ public class BarberDashboardController : ControllerBase
         _context.Notifications.Add(new Notification
         {
             UserId = booking.CustomerId,
-            Title = "ظ…ظˆط¹ط¯ظƒ ط§ظ„ط¢ظ†",
-            Message = $"ط®ط¯ظ…طھظƒ ط¨ط¯ط£طھ ظپظٹ {booking.BarberProfile.ShopName}",
+            Title = "موعدك التالي",
+            Message = $"خدمتك تبدأ في {booking.BarberProfile.ShopName}",
             Type = "booking",
             IsRead = false,
             Data = booking.Id.ToString()
@@ -313,8 +313,8 @@ public class BarberDashboardController : ControllerBase
         {
             await _fcm.SendToUser(
                 booking.CustomerId,
-                "ظ…ظˆط¹ط¯ظƒ ط§ظ„ط¢ظ†",
-                $"ط®ط¯ظ…طھظƒ ط¨ط¯ط£طھ ظپظٹ {booking.BarberProfile.ShopName}",
+                "موعدك التالي",
+                $"خدمتك تبدأ في {booking.BarberProfile.ShopName}",
                 new Dictionary<string, string>
                 {
                     { "type", "booking_update" },
@@ -327,7 +327,7 @@ public class BarberDashboardController : ControllerBase
             // Log but don't fail
         }
 
-        return Ok(new { message = "طھظ… ط¨ط¯ط، ط§ظ„ط®dظ…ط©", startedAt = booking.StartedAt, durationMinutes = booking.ServiceDurationMinutes });
+        return Ok(new { message = "تم بدء الخدمة", startedAt = booking.StartedAt, durationMinutes = booking.ServiceDurationMinutes });
     }
 
     [HttpPut("bookings/{id}/request-payment")]
@@ -341,10 +341,10 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == id && b.BarberProfileId == profile.Id);
 
         if (booking == null)
-            return NotFound(new { message = "ط§ظ„ط­ط¬ط² ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الحجز غير موجود" });
 
         if (booking.Status != "InProgress")
-            return BadRequest(new { message = "ظ„ط§ ظٹظ…ظƒظ† ط·ظ„ط¨ ط§ظ„ط¯ظپط¹ ظ„ظ‡ط°ط§ ط§ظ„ط­ط¬ط²" });
+            return BadRequest(new { message = "لا يمكن طلب الدفع لهذا الحجز" });
 
         booking.Status = "PaymentPending";
         booking.ServiceCompletedAt = DateTime.UtcNow;
@@ -353,15 +353,15 @@ public class BarberDashboardController : ControllerBase
         _context.Notifications.Add(new Notification
         {
             UserId = booking.CustomerId,
-            Title = "ط¨ط§ظ†طھط¸ط§ط± ط§ظ„ط¯ظپط¹",
-            Message = $"ط§ظ†طھظ‡طھ ط®ط¯ظ…ط© {booking.BarberService.Name}. ط§ظ„ظ…ط¨ظ„ط؛: {booking.FinalPrice}â‚ھ â€” ظٹط±ط¬ظ‰ ط¥طھظ…ط§ظ… ط§ظ„ط¯ظپط¹.",
+            Title = "بانتظار الدفع",
+            Message = $"انتهت خدمة {booking.BarberService.Name}. المبلغ: {booking.FinalPrice}₪ — ظٹط±ط¬ظ‰ إتمام الدفع.",
             Type = "booking",
             IsRead = false,
             Data = booking.Id.ToString()
         });
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… ط·ظ„ط¨ ط§ظ„ط¯ظپط¹" });
+        return Ok(new { message = "تم طلب الدفع" });
     }
 
     [HttpPut("bookings/{id}/complete")]
@@ -373,10 +373,10 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == id && b.BarberProfileId == profile.Id);
 
         if (booking == null)
-            return NotFound(new { message = "ط§ظ„ط­ط¬ط² ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الحجز غير موجود" });
 
         if (booking.Status != "PaymentPending")
-            return BadRequest(new { message = "ظ„ط§ ظٹظ…ظƒظ† ط¥ظƒظ…ط§ظ„ ظ‡ط°ط§ ط§ظ„ط­ط¬ط²" });
+            return BadRequest(new { message = "لا يمكن إكمال هذا الحجز" });
 
         booking.Status = "Completed";
         booking.PaymentStatus = "Paid";
@@ -385,7 +385,7 @@ public class BarberDashboardController : ControllerBase
             booking.ServiceCompletedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… ط¥ظƒظ…ط§ظ„ ط§ظ„ط­ط¬ط²" });
+        return Ok(new { message = "تم إكمال الحجز" });
     }
 
     [HttpPut("bookings/{id}/no-show")]
@@ -399,10 +399,10 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == id && b.BarberProfileId == profile.Id);
 
         if (booking == null)
-            return NotFound(new { message = "ط§ظ„ط­ط¬ط² ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الحجز غير موجود" });
 
         if (booking.Status != "Accepted")
-            return BadRequest(new { message = "ظ„ط§ ظٹظ…ظƒظ† طھط­ط¯ظٹط¯ ظ‡ط°ط§ ط§ظ„ط­ط¬ط² ظƒظ€ظ„ظ… ظٹط­ط¶ط±" });
+            return BadRequest(new { message = "لا يمكن تحديد هذا الحجز كلم يحضر" });
 
         booking.Status = "NoShow";
         booking.NoShowAt = DateTime.UtcNow;
@@ -418,15 +418,15 @@ public class BarberDashboardController : ControllerBase
         {
             customer.IsBookingBlocked = true;
             customer.BookingBlockedAt = DateTime.UtcNow;
-            customer.BlockReason = $"ط¹ط¯ظ… ط§ظ„ط­ط¶ظˆط± ط§ظ„ظ…طھظƒط±ط± ({customer.NoShowCount} ظ…ط±ط§طھ)";
+            customer.BlockReason = $"عدم الحضور المتكرر ({customer.NoShowCount} ظ…ط±ط§طھ)";
 
-            notificationTitle = "طھظ… ط­ط¸ط±ظƒ ظ…ظ† ط§ظ„ط­ط¬ط²";
-            notificationMessage = $"طھظ… ط­ط¸ط±ظƒ ظ…ظ† ط¥ظ†ط´ط§ط، ط­ط¬ظˆط²ط§طھ ط¬ط¯ظٹط¯ط© ط¨ط³ط¨ط¨ ط¹ط¯ظ… ط§ظ„ط­ط¶ظˆط± ط§ظ„ظ…طھظƒط±ط± ({customer.NoShowCount} ظ…ط±ط§طھ). طھظˆط§طµظ„ ظ…ط¹ ط§ظ„ط­ظ„ط§ظ‚ ط£ظˆ ط§ظ„ط¯ط¹ظ… ط§ظ„ظپظ†ظٹ ظ„ظپظƒ ط§ظ„ط­ط¸ط±.";
+            notificationTitle = "تم حظرك من الحجز";
+            notificationMessage = $"طھظ… ط­ط¸ط±ظƒ ظ…ظ† انشاء حجوزات جديدة ط¨ط³ط¨ط¨ عدم الحضور المتكرر ({customer.NoShowCount} ظ…ط±ط§طھ). تواصل مع الحلاق ط£ظˆ الدعم الفني لفك الحظر.";
         }
         else
         {
-            notificationTitle = "طھظ†ط¨ظٹظ‡: ط¹ط¯ظ… ط§ظ„ط­ط¶ظˆط±";
-            notificationMessage = $"ظ„ظ… طھط­ط¶ط± ظ„ظ„ظ…ظˆط¹ط¯ â€” {booking.BarberService.Name} ظٹظˆظ… {booking.BookingDate:yyyy-MM-dd}. طھظ†ط¨ظٹظ‡: طھظƒط±ط§ط± ط¹ط¯ظ… ط§ظ„ط­ط¶ظˆط± ظ‚ط¯ ظٹط¤ط¯ظٹ ط¥ظ„ظ‰ ط¥ظٹظ‚ط§ظپ ط§ظ„ط­ط¬ط².";
+            notificationTitle = "تنبيه: عدم الحضور";
+            notificationMessage = $"لم يحضر للموعد — {booking.BarberService.Name} ظٹظˆظ… {booking.BookingDate:yyyy-MM-dd}. تنبيه: تكرار عدم الحضور قد يؤدي الى إيقاف الحجز.";
         }
 
         await _context.SaveChangesAsync();
@@ -444,7 +444,7 @@ public class BarberDashboardController : ControllerBase
 
         return Ok(new
         {
-            message = "طھظ… طھط­ط¯ظٹط¯ ط§ظ„ط­ط¬ط² ظƒظ„ظ… ظٹط­ط¶ط±",
+            message = "تم تحديد الحجز كلم يحضر",
             noShowCount = customer.NoShowCount,
             isBlocked = customer.IsBookingBlocked
         });
@@ -462,7 +462,7 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == id && b.BarberProfileId == profile.Id);
 
         if (booking == null)
-            return NotFound(new { message = "ط§ظ„ط­ط¬ط² ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الحجز غير موجود" });
 
         return Ok(new
         {
@@ -498,13 +498,13 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(b => b.Id == id && b.BarberProfileId == profile.Id);
 
         if (booking == null)
-            return NotFound(new { message = "ط§ظ„ط­ط¬ط² ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الحجز غير موجود" });
 
         if (booking.Status != "Upcoming")
-            return BadRequest(new { message = "ظ„ط§ ظٹظ…ظƒظ† طھط¹ط¯ظٹظ„ ظ‡ط°ط§ ط§ظ„ط­ط¬ط²" });
+            return BadRequest(new { message = "لا يمكن تعديل هذا الحجز" });
 
         if (!TimeSpan.TryParse(dto.NewTime, out var newTime))
-            return BadRequest(new { message = "طµظٹط؛ط© ط§ظ„ظˆظ‚طھ ط؛ظٹط± طµط­ظٹط­ط©" });
+            return BadRequest(new { message = "صيغة الوقت غير صحيحة" });
 
         var newDate = dto.NewDate.Kind == DateTimeKind.Utc
             ? dto.NewDate
@@ -514,7 +514,7 @@ public class BarberDashboardController : ControllerBase
         booking.BookingTime = newTime;
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… طھط¹ط¯ظٹظ„ ط§ظ„ظ…ظˆط¹ط¯ ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم تعديل الموعد بنجاح" });
     }
 
     [HttpGet("customers/blocked")]
@@ -555,14 +555,14 @@ public class BarberDashboardController : ControllerBase
             b.Status == "NoShow");
 
         if (!hasNoShow)
-            return Forbid("ظ„ط§ ظٹظ…ظƒظ†ظƒ ظپظƒ ط­ط¸ط± ط¹ظ…ظٹظ„ ظ„ظ… طھط­ط¯ط« ظ…ط¹ظ‡ ظ…ط´ظƒظ„ط©");
+            return Forbid("لا يمكنك فك حظر عميل لم تحذث منه مشكلة");
 
         var customer = await _context.Users.FindAsync(id);
         if (customer == null)
-            return NotFound(new { message = "ط§ظ„ط¹ظ…ظٹظ„ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "العميل غير موجود" });
 
         if (!customer.IsBookingBlocked)
-            return BadRequest(new { message = "ط§ظ„ط¹ظ…ظٹظ„ ط؛ظٹط± ظ…ط­ط¸ظˆط±" });
+            return BadRequest(new { message = "العميل غير محظور" });
 
         customer.NoShowCount = 0;
         customer.IsBookingBlocked = false;
@@ -572,15 +572,15 @@ public class BarberDashboardController : ControllerBase
         _context.Notifications.Add(new Notification
         {
             UserId = customer.Id,
-            Title = "طھظ… ظپظƒ ط­ط¸ط±ظƒ ظ…ظ† ط§ظ„ط­ط¬ط²",
-            Message = $"ظ‚ط§ظ… ط§ظ„ط­ظ„ط§ظ‚ {profile.ShopName} ط¨ظپظƒ ط­ط¸ط±ظƒ. ظٹظ…ظƒظ†ظƒ ط§ظ„ط¢ظ† ط¥ظ†ط´ط§ط، ط­ط¬ظˆط²ط§طھ ط¬ط¯ظٹط¯ط©.",
+            Title = "تم فك حظرك من الحجز",
+            Message = $"قام الحلاق {profile.ShopName} بك حظرك. يمكنك الآن انشاء حجوزات جديدة.",
             Type = "booking",
             IsRead = false
         });
 
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… ظپظƒ ط­ط¸ط± ط§ظ„ط¹ظ…ظٹظ„ ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم فك حظر العميل بنجاح" });
     }
 
     [HttpGet("services")]
@@ -636,14 +636,14 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(s => s.Id == id && s.BarberProfileId == profile.Id);
 
         if (service == null)
-            return NotFound(new { message = "ط§ظ„ط®ط¯ظ…ط© ط؛ظٹط± ظ…ظˆط¬ظˆط¯ط©" });
+            return NotFound(new { message = "الخدمة غير موجودة" });
 
         service.Name = dto.Name;
         service.Price = dto.Price;
         service.DurationInMinutes = dto.DurationInMinutes;
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… طھط­ط¯ظٹط« ط§ظ„ط®ط¯ظ…ط© ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم تحديث الخدمة بنجاح" });
     }
 
     [HttpDelete("services/{id}")]
@@ -655,12 +655,12 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(s => s.Id == id && s.BarberProfileId == profile.Id);
 
         if (service == null)
-            return NotFound(new { message = "ط§ظ„ط®ط¯ظ…ط© ط؛ظٹط± ظ…ظˆط¬ظˆط¯ط©" });
+            return NotFound(new { message = "الخدمة غير موجودة" });
 
         _context.BarberServices.Remove(service);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… ط­ط°ظپ ط§ظ„ط®ط¯ظ…ط© ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم حذف الخدمة بنجاح" });
     }
 
     [HttpGet("schedule")]
@@ -706,7 +706,7 @@ public class BarberDashboardController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
-        return Ok(new { message = "طھظ… طھط­ط¯ظٹط« ط¬ط¯ظˆظ„ ط§ظ„ط¹ظ…ظ„ ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم تحديث جدول العملي بنجاح" });
     }
 
     [HttpGet("available-slots")]
@@ -716,13 +716,13 @@ public class BarberDashboardController : ControllerBase
 
         var dayNameArabic = date.DayOfWeek switch
         {
-            DayOfWeek.Saturday => "ط§ظ„ط³ط¨طھ",
-            DayOfWeek.Sunday => "ط§ظ„ط£ط­ط¯",
-            DayOfWeek.Monday => "ط§ظ„ط§ط«ظ†ظٹظ†",
-            DayOfWeek.Tuesday => "ط§ظ„ط«ظ„ط§ط«ط§ط،",
-            DayOfWeek.Wednesday => "ط§ظ„ط£ط±ط¨ط¹ط§ط،",
-            DayOfWeek.Thursday => "ط§ظ„ط®ظ…ظٹط³",
-            DayOfWeek.Friday => "ط§ظ„ط¬ظ…ط¹ط©",
+            DayOfWeek.Saturday => "السبت",
+            DayOfWeek.Sunday => "الاحد",
+            DayOfWeek.Monday => "الاثنين",
+            DayOfWeek.Tuesday => "الثلاثاء",
+            DayOfWeek.Wednesday => "الاربعاء",
+            DayOfWeek.Thursday => "الخميس",
+            DayOfWeek.Friday => "الجمعة",
             _ => ""
         };
 
@@ -752,7 +752,7 @@ public class BarberDashboardController : ControllerBase
             slots.Add(new
             {
                 time = current.ToString(@"hh\:mm"),
-                period = current.TotalHours >= 12 ? "ظ…ط³ط§ط،ظ‹" : "طµط¨ط§ط­ط§ظ‹",
+                period = current.TotalHours >= 12 ? "مساءً" : "صباحاً",
                 isAvailable = !isBooked
             });
             current = current.Add(TimeSpan.FromMinutes(30));
@@ -795,13 +795,13 @@ public class BarberDashboardController : ControllerBase
         {
             var profile = await GetBarberProfile();
             var user = await _context.Users.FindAsync(profile.UserId);
-            if (user == null) return NotFound(new { message = "ط§ظ„ظ…ط³طھط®ط¯ظ… ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            if (user == null) return NotFound(new { message = "المستخدم غير موجود" });
 
             using var reader = new StreamReader(Request.Body);
             var body = await reader.ReadToEndAsync();
 
             if (string.IsNullOrEmpty(body))
-                return BadRequest(new { message = "ط§ظ„ط¨ظٹط§ظ†ط§طھ ظ…ط·ظ„ظˆط¨ط©" });
+                return BadRequest(new { message = "البيانات مطلوبة" });
 
             using var doc = System.Text.Json.JsonDocument.Parse(body);
             var root = doc.RootElement;
@@ -839,7 +839,7 @@ public class BarberDashboardController : ControllerBase
             user.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "طھظ… طھط­ط¯ظٹط« ط§ظ„ظ…ظ„ظپ ط§ظ„ط´ط®طµظٹ ط¨ظ†ط¬ط§ط­" });
+            return Ok(new { message = "تم تحديث الملف الشخصي بنجاح" });
         }
         catch (Exception ex)
         {
@@ -855,13 +855,13 @@ public class BarberDashboardController : ControllerBase
         {
             var profile = await GetBarberProfile();
             var user = await _context.Users.FindAsync(profile.UserId);
-            if (user == null) return NotFound(new { message = "ط§ظ„ظ…ط³طھط®ط¯ظ… ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            if (user == null) return NotFound(new { message = "المستخدم غير موجود" });
 
             using var reader = new StreamReader(Request.Body);
             var body = await reader.ReadToEndAsync();
 
             if (string.IsNullOrEmpty(body))
-                return BadRequest(new { message = "ط§ظ„طµظˆط±ط© ظ…ط·ظ„ظˆط¨ط©" });
+                return BadRequest(new { message = "الصورة مطلوبة" });
 
             using var doc = System.Text.Json.JsonDocument.Parse(body);
             var root = doc.RootElement;
@@ -875,7 +875,7 @@ public class BarberDashboardController : ControllerBase
                 imageType = typeProp.GetString();
 
             if (string.IsNullOrEmpty(imageBase64))
-                return BadRequest(new { message = "ط§ظ„طµظˆط±ط© ظ…ط·ظ„ظˆط¨ط©" });
+                return BadRequest(new { message = "الصورة مطلوبة" });
 
             var folder = imageType switch
             {
@@ -912,7 +912,7 @@ public class BarberDashboardController : ControllerBase
 
             return Ok(new
             {
-                message = "طھظ… ط±ظپط¹ ط§ظ„طµظˆط±ط© ط¨ظ†ط¬ط§ط­",
+                message = "تم رفع الصورة بنجاح",
                 profileImageUrl = user.ProfileImageUrl,
                 shopLogoUrl = profile.ShopLogoUrl,
                 coverImageUrl = profile.CoverImageUrl
@@ -996,7 +996,7 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync();
 
         if (employee == null)
-            return NotFound(new { message = "ط§ظ„ظ…ظˆط¸ظپ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الموظف غير موجود" });
 
         return Ok(employee);
     }
@@ -1009,7 +1009,7 @@ public class BarberDashboardController : ControllerBase
         var subscriptionService = HttpContext.RequestServices.GetRequiredService<ISubscriptionService>();
         var canAdd = await subscriptionService.CanAddEmployeeAsync(profile.Id);
         if (!canAdd)
-            return BadRequest(new { message = "ط®ط·طھظƒ ط§ظ„ط­ط§ظ„ظٹط© ظ„ط§ طھط³ظ…ط­ ط¨ط¥ط¶ط§ظپط© ظ…ظˆط¸ظپظٹظ†. ظ‚ظ… ط¨ط§ظ„طھط±ظ‚ظٹط© ظ„ط®ط·ط© ط£ط¹ظ„ظ‰." });
+            return BadRequest(new { message = "خطأ الحالة ظ„ط§ طھط³ظ…ط­ ط¨ط¥ط¶ط§ظپط© ظ…ظˆط¸ظپظٹظ†. ظ‚ظ… ط¨ط§ظ„طھط±ظ‚ظٹط© ظ„ط®ط·ط© ط£ط¹ظ„ظ‰." });
 
         var employee = new BarberEmployee
         {
@@ -1028,7 +1028,7 @@ public class BarberDashboardController : ControllerBase
             .Where(wh => wh.BarberProfileId == profile.Id)
             .ToListAsync();
 
-        var defaultDays = new[] { "ط§ظ„ط³ط¨طھ", "ط§ظ„ط£ط­ط¯", "ط§ظ„ط§ط«ظ†ظٹظ†", "ط§ظ„ط«ظ„ط§ط«ط§ط،", "ط§ظ„ط£ط±ط¨ط¹ط§ط،", "ط§ظ„ط®ظ…ظٹط³", "ط§ظ„ط¬ظ…ط¹ط©" };
+        var defaultDays = new[] { "السبت", "الاحد", "الاثنين", "الثلاثاء", "الاربعاء", "الخميس", "الجمعة" };
         foreach (var day in defaultDays)
         {
             var shopDay = shopHours.FirstOrDefault(wh => wh.DayName == day);
@@ -1063,7 +1063,7 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(e => e.Id == id && e.BarberProfileId == profile.Id);
 
         if (employee == null)
-            return NotFound(new { message = "ط§ظ„ظ…ظˆط¸ظپ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الموظف غير موجود" });
 
         if (dto.Name != null) employee.Name = dto.Name;
         if (dto.PhoneNumber != null) employee.PhoneNumber = dto.PhoneNumber;
@@ -1072,7 +1072,7 @@ public class BarberDashboardController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… طھط­ط¯ظٹط« ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ظˆط¸ظپ ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم تحديث بيانات الموظف بنجاح" });
     }
 
     [HttpPut("employees/{id}/toggle")]
@@ -1084,7 +1084,7 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(e => e.Id == id && e.BarberProfileId == profile.Id);
 
         if (employee == null)
-            return NotFound(new { message = "ط§ظ„ظ…ظˆط¸ظپ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الموظف غير موجود" });
 
         employee.IsActive = !employee.IsActive;
         await _context.SaveChangesAsync();
@@ -1093,7 +1093,7 @@ public class BarberDashboardController : ControllerBase
         {
             id = employee.Id,
             isActive = employee.IsActive,
-            message = employee.IsActive ? "طھظ… طھظپط¹ظٹظ„ ط§ظ„ظ…ظˆط¸ظپ" : "طھظ… طھط¹ط·ظٹظ„ ط§ظ„ظ…ظˆط¸ظپ"
+            message = employee.IsActive ? "تم تفعيل الموظف" : "تم تعطيل الموظف"
         });
     }
 
@@ -1106,12 +1106,12 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(e => e.Id == id && e.BarberProfileId == profile.Id);
 
         if (employee == null)
-            return NotFound(new { message = "ط§ظ„ظ…ظˆط¸ظپ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الموظف غير موجود" });
 
         _context.BarberEmployees.Remove(employee);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… ط­ط°ظپ ط§ظ„ظ…ظˆط¸ظپ ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم حذف الموظف بنجاح" });
     }
 
     [HttpGet("employees/{id}/schedule")]
@@ -1123,7 +1123,7 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(e => e.Id == id && e.BarberProfileId == profile.Id);
 
         if (employee == null)
-            return NotFound(new { message = "ط§ظ„ظ…ظˆط¸ظپ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الموظف غير موجود" });
 
         var schedules = await _context.EmployeeSchedules
             .Where(s => s.EmployeeId == id)
@@ -1150,7 +1150,7 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(e => e.Id == id && e.BarberProfileId == profile.Id);
 
         if (employee == null)
-            return NotFound(new { message = "ط§ظ„ظ…ظˆط¸ظپ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الموظف غير موجود" });
 
         foreach (var day in dto.Days)
         {
@@ -1178,7 +1178,7 @@ public class BarberDashboardController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… طھط­ط¯ظٹط« ط¬ط¯ظˆظ„ ط§ظ„ط¯ظˆط§ظ… ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم تحديث جدول الدوام بنجاح" });
     }
 
     [HttpGet("employees/{id}/services")]
@@ -1190,7 +1190,7 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(e => e.Id == id && e.BarberProfileId == profile.Id);
 
         if (employee == null)
-            return NotFound(new { message = "ط§ظ„ظ…ظˆط¸ظپ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الموظف غير موجود" });
 
         var allServices = await _context.BarberServices
             .Where(s => s.BarberProfileId == profile.Id)
@@ -1230,7 +1230,7 @@ public class BarberDashboardController : ControllerBase
             .FirstOrDefaultAsync(e => e.Id == id && e.BarberProfileId == profile.Id);
 
         if (employee == null)
-            return NotFound(new { message = "ط§ظ„ظ…ظˆط¸ظپ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            return NotFound(new { message = "الموظف غير موجود" });
 
         var existing = await _context.EmployeeServices
             .Where(es => es.EmployeeId == id)
@@ -1249,7 +1249,7 @@ public class BarberDashboardController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… طھط­ط¯ظٹط« ط®ط¯ظ…ط§طھ ط§ظ„ظ…ظˆط¸ظپ ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم تحديث خدمات الموظف بنجاح" });
     }
 
     // ==================== ANALYTICS ENDPOINTS ====================
@@ -1262,7 +1262,7 @@ public class BarberDashboardController : ControllerBase
         var subscriptionService = HttpContext.RequestServices.GetRequiredService<ISubscriptionService>();
         var canUse = await subscriptionService.CanUseAnalyticsAsync(profile.Id);
         if (!canUse)
-            return BadRequest(new { message = "ظٹط¬ط¨ ط§ظ„ط§ط´طھط±ط§ظƒ ظپظٹ ط®ط·ط© ط§ظ„ط§ط­طھط±ط§ظپظٹط© ط£ظˆ ط§ظ„ظ…ظ…ظٹط²ط© ظ„ط¹ط±ط¶ ط§ظ„طھط­ظ„ظٹظ„ط§طھ" });
+            return BadRequest(new { message = "يجب الاشتراك في خطه الاحترازية او المجانية لعرض التحليلاات" });
 
         var currentSubscription = await subscriptionService.GetCurrentSubscriptionAsync(profile.Id);
         var isAdvanced = currentSubscription?.AnalyticsLevel == "advanced";

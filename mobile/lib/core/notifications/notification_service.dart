@@ -21,10 +21,11 @@ class NotificationService {
   String? get fcmToken => _fcmToken;
 
   Future<void> initialize() async {
-    if (kIsWeb) return;
     try {
-      await _requestPermission();
-      await _initLocalNotifications();
+      if (!kIsWeb) {
+        await _requestPermission();
+        await _initLocalNotifications();
+      }
       await _getToken();
       _setupMessageHandlers();
     } catch (e) {
@@ -90,10 +91,11 @@ class NotificationService {
 
   Future<void> _saveTokenToBackend(String token) async {
     try {
+      final platform = kIsWeb ? 'web' : (defaultTargetPlatform == TargetPlatform.android ? 'android' : 'ios');
       await _apiClient.dio.post('/api/auth/fcm-token', data: {
         'token': token,
-        'platform': defaultTargetPlatform == TargetPlatform.android ? 'android' : 'ios',
-        'deviceName': 'Web Browser',
+        'platform': platform,
+        'deviceName': kIsWeb ? 'Web Browser' : defaultTargetPlatform.toString().split('.').last,
       });
       print('FCM Token saved to backend');
     } catch (e) {
@@ -111,12 +113,19 @@ class NotificationService {
     print('Foreground message: ${message.notification?.title}');
 
     if (message.notification != null) {
-      await _showLocalNotification(
-        id: message.hashCode,
-        title: message.notification!.title ?? '',
-        body: message.notification!.body ?? '',
-        data: message.data,
-      );
+      if (kIsWeb) {
+        _showWebNotification(
+          title: message.notification!.title ?? '',
+          body: message.notification!.body ?? '',
+        );
+      } else {
+        await _showLocalNotification(
+          id: message.hashCode,
+          title: message.notification!.title ?? '',
+          body: message.notification!.body ?? '',
+          data: message.data,
+        );
+      }
     }
   }
 
@@ -190,5 +199,14 @@ class NotificationService {
       details,
       payload: jsonEncode(data),
     );
+  }
+
+  void _showWebNotification({required String title, required String body}) {
+    try {
+      _apiClient.dio.get('/api/notifications');
+    } catch (_) {}
+
+    if (title.isEmpty && body.isEmpty) return;
+    print('Web notification: $title - $body');
   }
 }
