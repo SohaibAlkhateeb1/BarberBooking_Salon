@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using BarberBooking.API.Authorization;
 using BarberBooking.API.Data;
@@ -62,11 +62,12 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // --- File Storage Service ---
-var supabaseUrl = builder.Configuration["Supabase:Url"];
-var supabaseKey = builder.Configuration["Supabase:Key"];
-if (!string.IsNullOrEmpty(supabaseUrl) && !string.IsNullOrEmpty(supabaseKey))
+var cloudName = builder.Configuration["Cloudinary:CloudName"];
+var cloudApiKey = builder.Configuration["Cloudinary:ApiKey"];
+var cloudApiSecret = builder.Configuration["Cloudinary:ApiSecret"];
+if (!string.IsNullOrEmpty(cloudName) && !string.IsNullOrEmpty(cloudApiKey) && !string.IsNullOrEmpty(cloudApiSecret))
 {
-    builder.Services.AddSingleton<IFileStorageService>(new SupabaseStorageService(supabaseUrl, supabaseKey));
+    builder.Services.AddSingleton<IFileStorageService>(new CloudinaryStorageService(cloudName, cloudApiKey, cloudApiSecret));
 }
 else
 {
@@ -306,3 +307,4 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+

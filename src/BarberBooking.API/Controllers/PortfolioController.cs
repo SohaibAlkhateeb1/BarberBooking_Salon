@@ -1,4 +1,4 @@
-using BarberBooking.Application.Interfaces;
+﻿using BarberBooking.Application.Interfaces;
 using BarberBooking.Domain.Entities;
 using BarberBooking.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -89,7 +89,7 @@ public class PortfolioController : ControllerBase
             .FirstOrDefaultAsync(p => p.Id == id && p.BarberProfileId == profileId);
 
         if (image == null)
-            return NotFound(new { message = "الصورة غير موجودة" });
+            return NotFound(new { message = "ط§ظ„طµظˆط±ط© ط؛ظٹط± ظ…ظˆط¬ظˆط¯ط©" });
 
         image.Caption = request.Caption ?? image.Caption;
         image.SortOrder = request.SortOrder ?? image.SortOrder;
@@ -114,19 +114,17 @@ public class PortfolioController : ControllerBase
             .FirstOrDefaultAsync(p => p.Id == id && p.BarberProfileId == profileId);
 
         if (image == null)
-            return NotFound(new { message = "الصورة غير موجودة" });
+            return NotFound(new { message = "ط§ظ„طµظˆط±ط© ط؛ظٹط± ظ…ظˆط¬ظˆط¯ط©" });
 
-        if (!string.IsNullOrEmpty(image.ImageUrl) && image.ImageUrl.StartsWith("/uploads/"))
+        if (!string.IsNullOrEmpty(image.ImageUrl))
         {
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), image.ImageUrl.TrimStart('/'));
-            if (System.IO.File.Exists(filePath))
-                System.IO.File.Delete(filePath);
+            await _fileStorageService.DeleteImageAsync(image.ImageUrl);
         }
 
         _context.PortfolioImages.Remove(image);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "تم حذف الصورة" });
+        return Ok(new { message = "طھظ… ط­ط°ظپ ط§ظ„طµظˆط±ط©" });
     }
 
     [HttpPut("reorder")]
@@ -145,7 +143,7 @@ public class PortfolioController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
-        return Ok(new { message = "تم تحديث الترتيب" });
+        return Ok(new { message = "طھظ… طھط­ط¯ظٹط« ط§ظ„طھط±طھظٹط¨" });
     }
 }
 
@@ -167,3 +165,4 @@ public class ReorderRequest
 {
     public List<Guid> ImageIds { get; set; } = new();
 }
+
