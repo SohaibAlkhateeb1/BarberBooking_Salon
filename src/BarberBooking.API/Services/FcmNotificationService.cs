@@ -93,11 +93,14 @@ public class FcmNotificationService : IFirebasePushService
         }
         else
         {
-            var oldTokens = await _context.UserDevices
-                .Where(ud => ud.UserId == userId && ud.FcmToken == fcmToken)
+            var otherTokens = await _context.UserDevices
+                .Where(ud => ud.UserId == userId && ud.FcmToken != fcmToken && ud.IsActive)
                 .ToListAsync();
 
-            _context.UserDevices.AddRange(oldTokens);
+            foreach (var old in otherTokens)
+            {
+                old.IsActive = false;
+            }
 
             _context.UserDevices.Add(new UserDevice
             {

@@ -141,4 +141,34 @@ public class NotificationsController : ControllerBase
         await _context.Database.ExecuteSqlRawAsync("DELETE FROM \"Notifications\"");
         return Ok(new { message = $"تم حذف {count} إشعار", deletedCount = count });
     }
+
+    [HttpPost("admin/cleanup-tokens")]
+    [AllowAnonymous]
+    public async Task<IActionResult> AdminCleanupDuplicateTokens()
+    {
+        var duplicateGroups = await _context.UserDevices
+            .Where(ud => ud.IsActive)
+            .GroupBy(ud => ud.UserId)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToListAsync();
+
+        var deactivated = 0;
+        foreach (var userId in duplicateGroups)
+        {
+            var tokens = await _context.UserDevices
+                .Where(ud => ud.UserId == userId && ud.IsActive)
+                .OrderByDescending(ud => ud.LastUsedAt)
+                .ToListAsync();
+
+            foreach (var token in tokens.Skip(1))
+            {
+                token.IsActive = false;
+                deactivated++;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return Ok(new { message = $"تم تطعيل {deactivated} توكن مكرر", deactivatedCount = deactivated });
+    }
 }

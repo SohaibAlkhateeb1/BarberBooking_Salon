@@ -177,16 +177,29 @@ class _BarberBookingsScreenState extends State<BarberBookingsScreen>
     String label,
   ) {
     if (bookings.isEmpty) {
-      return const EmptyState(
-        type: EmptyStateType.bookings,
+      return RefreshIndicator(
+        onRefresh: _loadBookings,
+        color: AppColors.primary,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 100),
+            EmptyState(type: EmptyStateType.bookings),
+          ],
+        ),
       );
     }
-    return ListView.builder(
-      padding: AppSpacing.pageAll,
-      itemCount: bookings.length,
-      itemBuilder: (context, index) => FadeIn(
-        delay: Duration(milliseconds: 50 * index),
-        child: _buildBookingCard(bookings[index]),
+    return RefreshIndicator(
+      onRefresh: _loadBookings,
+      color: AppColors.primary,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: AppSpacing.pageAll,
+        itemCount: bookings.length,
+        itemBuilder: (context, index) => FadeIn(
+          delay: Duration(milliseconds: 50 * index),
+          child: _buildBookingCard(bookings[index]),
+        ),
       ),
     );
   }

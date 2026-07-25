@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/time_formatter.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/notifications/notification_service.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/animations/app_animations.dart';
 import '../data/barber_dashboard_service.dart';
@@ -25,11 +28,14 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   bool _isLoading = true;
   String? _error;
   Timer? _refreshTimer;
+  bool _showPushBanner = false;
+  bool _requestingPermission = false;
 
   @override
   void initState() {
     super.initState();
     _loadDashboard();
+    _checkPushBanner();
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) _loadDashboard();
     });
@@ -55,6 +61,41 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     }
   }
 
+  Future<void> _checkPushBanner() async {
+    if (!kIsWeb) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final alreadyEnabled = prefs.getBool('push_notifications_enabled_barber') ?? false;
+      if (alreadyEnabled) return;
+      if (mounted) setState(() => _showPushBanner = true);
+    } catch (_) {}
+  }
+
+  Future<void> _enablePushNotifications() async {
+    setState(() => _requestingPermission = true);
+    try {
+      final granted = await NotificationService().requestWebPermission();
+      if (mounted) {
+        final prefs = await SharedPreferences.getInstance();
+        if (granted) {
+          await prefs.setBool('push_notifications_enabled_barber', true);
+        }
+        setState(() {
+          _showPushBanner = false;
+          _requestingPermission = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(granted ? 'تم تفعيل الإشعارات بنجاح' : 'لم يتم تفعيل الإشعارات'),
+            backgroundColor: granted ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _requestingPermission = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,6 +116,10 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (_showPushBanner) ...[
+                            _buildPushBanner(),
+                            const SizedBox(height: 16),
+                          ],
                           FadeIn(
                             child: _buildHeader(),
                           ),
@@ -135,6 +180,48 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
           const SizedBox(height: 10),
           SkeletonLoader(height: 72, borderRadius: AppBorderRadius.md),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPushBanner() {
+    return GestureDetector(
+      onTap: _requestingPermission ? null : _enablePushNotifications,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A3D2E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+              child: const Icon(Icons.notifications_active, color: Colors.black, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('فعّل إشعارات الحجز', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 2),
+                  Text('استلم طلبات الحجز حتى لو التطبيق مقفل', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+              child: _requestingPermission
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                  : const Text('تفعيل', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }
