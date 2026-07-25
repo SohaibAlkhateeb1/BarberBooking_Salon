@@ -129,6 +129,39 @@ public class CustomerController : ControllerBase
         }
     }
 
+    [HttpPost("upload-image-only")]
+    [DisableRequestSizeLimit]
+    public async Task<IActionResult> UploadImageOnly()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            using var reader = new StreamReader(Request.Body);
+            var body = await reader.ReadToEndAsync();
+
+            if (string.IsNullOrEmpty(body))
+                return BadRequest(new { message = "الصورة مطلوبة" });
+
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("imageBase64", out var imageProp))
+            {
+                var imageBase64 = imageProp.GetString();
+                if (!string.IsNullOrEmpty(imageBase64))
+                {
+                    var imageUrl = await _fileStorage.SaveImageAsync(imageBase64, "support");
+                    return Ok(new { imageUrl });
+                }
+            }
+
+            return BadRequest(new { message = "الصورة مطلوبة" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading support image");
+            return StatusCode(500, new { message = "خطأ في رفع الصورة" });
+        }
+    }
+
     [HttpGet("favorites")]
     public async Task<IActionResult> GetFavorites()
     {
@@ -146,6 +179,8 @@ public class CustomerController : ControllerBase
                 id = f.BarberProfile.Id,
                 shopName = f.BarberProfile.ShopName,
                 shopDescription = f.BarberProfile.ShopDescription,
+                coverImageUrl = f.BarberProfile.CoverImageUrl,
+                shopLogoUrl = f.BarberProfile.ShopLogoUrl,
                 city = f.BarberProfile.City,
                 address = f.BarberProfile.Address,
                 ownerName = f.BarberProfile.User.FullName,

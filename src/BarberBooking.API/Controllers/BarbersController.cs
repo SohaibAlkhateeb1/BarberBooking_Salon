@@ -26,6 +26,7 @@ public class BarbersController : ControllerBase
             .Include(bp => bp.User)
             .Include(bp => bp.Services)
             .Include(bp => bp.Reviews)
+            .Where(bp => bp.User.IsActive)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(city))
@@ -100,7 +101,7 @@ public class BarbersController : ControllerBase
             .Include(bp => bp.Reviews)
                 .ThenInclude(r => r.Customer)
             .Include(bp => bp.PortfolioImages)
-            .FirstOrDefaultAsync(bp => bp.Id == id);
+            .FirstOrDefaultAsync(bp => bp.Id == id && bp.User.IsActive);
 
         if (barber == null)
             return NotFound(new { message = "الحلاق غير موجود" });
@@ -206,6 +207,7 @@ public class BarbersController : ControllerBase
             .Include(bp => bp.User)
             .Include(bp => bp.Services)
             .Include(bp => bp.Reviews)
+            .Where(bp => bp.User.IsActive)
             .ToListAsync();
 
         var nearby = barbers

@@ -420,6 +420,12 @@ export default function OperationsCenterPage() {
           onClose={() => { setSelectedTicket(null); setTicketDetail(null); }}
           actions={
             <div className="space-y-3 w-full">
+              {ticketDetail.attachmentUrl && (
+                <div className="mt-2">
+                  <span className="text-xs text-muted-foreground font-medium">المرفق:</span>
+                  <img src={ticketDetail.attachmentUrl} alt="attachment" className="mt-1 max-h-48 rounded border" />
+                </div>
+              )}
               {ticketDetail.status !== "Closed" && ticketDetail.status !== "Resolved" && (
                 <>
                   <div className="flex gap-2">

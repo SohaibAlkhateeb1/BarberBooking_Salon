@@ -152,7 +152,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           width: 80,
                           height: 80,
                           decoration: const BoxDecoration(gradient: AppColors.cardGlow),
-                          child: const Icon(Icons.content_cut, color: Colors.white, size: 30),
+                          child: fav.coverImageUrl != null && fav.coverImageUrl!.isNotEmpty
+                              ? Image.network(fav.coverImageUrl!, fit: BoxFit.cover, width: 80, height: 80,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.content_cut, color: Colors.white, size: 30))
+                              : fav.shopLogoUrl != null && fav.shopLogoUrl!.isNotEmpty
+                                  ? Image.network(fav.shopLogoUrl!, fit: BoxFit.cover, width: 80, height: 80,
+                                      errorBuilder: (_, __, ___) => const Icon(Icons.content_cut, color: Colors.white, size: 30))
+                                  : const Icon(Icons.content_cut, color: Colors.white, size: 30),
                         ),
                       ),
                       const SizedBox(width: 14),

@@ -41,6 +41,8 @@ class UserProfile {
 class FavoriteModel {
   final String id;
   final String shopName;
+  final String? coverImageUrl;
+  final String? shopLogoUrl;
   final String city;
   final String address;
   final String ownerName;
@@ -52,6 +54,8 @@ class FavoriteModel {
   FavoriteModel({
     required this.id,
     required this.shopName,
+    this.coverImageUrl,
+    this.shopLogoUrl,
     required this.city,
     required this.address,
     required this.ownerName,
@@ -65,6 +69,8 @@ class FavoriteModel {
     return FavoriteModel(
       id: json['id']?.toString() ?? '',
       shopName: json['shopName'] ?? '',
+      coverImageUrl: json['coverImageUrl'],
+      shopLogoUrl: json['shopLogoUrl'],
       city: json['city'] ?? '',
       address: json['address'] ?? '',
       ownerName: json['ownerName'] ?? '',

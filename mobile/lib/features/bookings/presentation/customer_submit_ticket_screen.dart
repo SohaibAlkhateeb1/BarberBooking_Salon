@@ -62,10 +62,10 @@ class _CustomerSubmitTicketScreenState extends State<CustomerSubmitTicketScreen>
     try {
       final bytes = await _pickedImage!.readAsBytes();
       final base64Image = base64Encode(bytes);
-      final response = await _api.dio.post('/api/customer/upload-image', data: {
+      final response = await _api.dio.post('/api/customer/upload-image-only', data: {
         'imageBase64': base64Image,
       });
-      return response.data['profileImageUrl'];
+      return response.data['imageUrl'];
     } catch (e) {
       return null;
     }

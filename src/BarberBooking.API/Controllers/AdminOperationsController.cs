@@ -398,6 +398,7 @@ public class AdminOperationsController : ControllerBase
                 userRole = t.User != null ? t.User.Role : null,
                 barberName = t.BarberProfile != null && t.BarberProfile.User != null ? t.BarberProfile.User.FullName : null,
                 shopName = t.BarberProfile != null ? t.BarberProfile.ShopName : null,
+                attachmentUrl = t.AttachmentUrl,
                 createdAt = t.CreatedAt,
                 lastReplyAt = t.LastReplyAt
             })
