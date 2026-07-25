@@ -6,21 +6,46 @@ class WebNotificationPlatform {
 
   static Future<bool> requestPermission() async {
     try {
-      final isIosBrowser = _isIos() && !_isStandalone();
+      final isIos = _isIos();
+      final isStandalone = _isStandalone();
 
-      if (isIosBrowser) {
-        print('iOS browser detected - notifications require Add to Home Screen');
+      print('WebNotification: isIos=$isIos, isStandalone=$isStandalone');
+
+      if (isIos && !isStandalone) {
+        print('iOS browser (not PWA) - notifications require Add to Home Screen');
+        return false;
+      }
+
+      final permission = await _getNotificationPermission();
+      print('Notification.permission before request: $permission');
+
+      if (permission == 'granted') {
+        _permissionGranted = true;
+        return true;
+      }
+
+      if (permission == 'denied') {
+        print('Notification permission already denied by user');
         return false;
       }
 
       final jsPromise = js.context['Notification'].callMethod('requestPermission', []);
       final result = await js_util.promiseToFuture(jsPromise);
+      print('Notification.requestPermission result: $result');
       _permissionGranted = result == 'granted';
-      print('Web notification permission: $_permissionGranted');
       return _permissionGranted;
     } catch (e) {
       print('Web permission request error: $e');
       return false;
+    }
+  }
+
+  static String? _getNotificationPermission() {
+    try {
+      final perm = js.context['Notification']['permission'];
+      return perm?.toString();
+    } catch (e) {
+      return null;
     }
   }
 
@@ -40,14 +65,39 @@ class WebNotificationPlatform {
   static bool _isStandalone() {
     try {
       final standalone = js.context['navigator']['standalone'];
-      if (standalone != null) return standalone.toString() == 'true';
-      final displayMode = js.context['matchMedia']
-          ?.callMethod('matches', ['(display-mode: standalone)']);
-      if (displayMode != null) return displayMode.toString() == 'true';
-      return false;
+      if (standalone != null && standalone.toString() == 'true') {
+        print('navigator.standalone = true');
+        return true;
+      }
     } catch (e) {
-      return false;
+      print('navigator.standalone check failed: $e');
     }
+
+    try {
+      final displayMode = js.context.callMethod(
+        'eval',
+        ["window.matchMedia('(display-mode: standalone)').matches"],
+      );
+      if (displayMode != null && displayMode.toString() == 'true') {
+        print('display-mode: standalone = true');
+        return true;
+      }
+    } catch (e) {
+      print('display-mode check failed: $e');
+    }
+
+    try {
+      final displayMode2 = js.context.callMethod(
+        'eval',
+        ["window.matchMedia('(display-mode: fullscreen)').matches"],
+      );
+      if (displayMode2 != null && displayMode2.toString() == 'true') {
+        print('display-mode: fullscreen = true');
+        return true;
+      }
+    } catch (e) {}
+
+    return false;
   }
 
   static void showNotification({required String title, required String body}) {
@@ -55,7 +105,10 @@ class WebNotificationPlatform {
       print('iOS browser: cannot show notification, needs Add to Home Screen');
       return;
     }
-    if (!_permissionGranted) return;
+    if (!_permissionGranted) {
+      print('No notification permission, skipping');
+      return;
+    }
     try {
       final options = js_util.jsify({
         'body': body,

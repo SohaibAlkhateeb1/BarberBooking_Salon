@@ -26,12 +26,14 @@ class NotificationService {
     try {
       if (kIsWeb) {
         await _initWebNotifications();
+        await _getToken();
+        _setupMessageHandlers();
       } else {
         await _requestPermission();
         await _initLocalNotifications();
+        await _getToken();
+        _setupMessageHandlers();
       }
-      await _getToken();
-      _setupMessageHandlers();
     } catch (e) {
       print('NotificationService init failed (non-critical): $e');
     }
@@ -43,6 +45,7 @@ class NotificationService {
     try {
       final granted = await WebNotificationHelper.requestPermission();
       print('Web notification permission granted: $granted');
+      print('Web needsInstallPrompt: ${WebNotificationHelper.needsInstallPrompt}');
     } catch (e) {
       print('Web notification init error: $e');
     }

@@ -186,6 +186,31 @@ public class FcmNotificationService : IFirebasePushService
                         Icon = "@mipmap/ic_launcher",
                         Color = "#0DF1B5"
                     }
+                },
+                Webpush = new WebpushConfig()
+                {
+                    Headers = new Dictionary<string, string>()
+                    {
+                        ["TTL"] = "86400",
+                        ["Urgency"] = "high"
+                    },
+                    Notification = new WebpushNotification()
+                    {
+                        Title = title,
+                        Body = body,
+                        Icon = "/icons/Icon-192.png",
+                        Badge = "/icons/Icon-192.png",
+                        Tag = "barberbooking",
+                        RequireInteraction = true
+                    }
+                },
+                Apns = new ApnsConfig()
+                {
+                    Headers = new Dictionary<string, string>()
+                    {
+                        ["apns-priority"] = "10",
+                        ["apns-push-type"] = "alert"
+                    }
                 }
             };
 
