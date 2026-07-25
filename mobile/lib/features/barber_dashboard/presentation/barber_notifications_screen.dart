@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/notifications/notification_service.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/animations/app_animations.dart';
 
@@ -41,6 +43,8 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> {
   List<NotificationModel> _notifications = [];
   bool _isLoading = true;
   Timer? _refreshTimer;
+  bool _pushEnabled = kIsWeb ? NotificationService().isWebPermissionGranted : true;
+  bool _requestingPermission = false;
 
   @override
   void initState() {
@@ -115,6 +119,27 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> {
     return 'الآن';
   }
 
+  Future<void> _enablePushNotifications() async {
+    setState(() => _requestingPermission = true);
+    try {
+      final granted = await NotificationService().requestWebPermission();
+      if (mounted) {
+        setState(() {
+          _pushEnabled = granted;
+          _requestingPermission = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(granted ? 'تم تفعيل الإشعارات بنجاح' : 'لم يتم تفعيل الإشعارات'),
+            backgroundColor: granted ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _requestingPermission = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -143,11 +168,62 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> {
           ],
         ],
       ),
-      body: _isLoading
-          ? _buildLoadingSkeleton()
-          : _notifications.isEmpty
-              ? const EmptyState(type: EmptyStateType.notifications)
-              : _buildNotificationsList(isDark),
+      body: Column(
+        children: [
+          if (kIsWeb && !_pushEnabled)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.15),
+                    AppColors.primary.withValues(alpha: 0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.notifications_active, color: AppColors.primary, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('فعّل إشعارات الدفع', style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 2),
+                        Text('استلم إشعارات حتى لو التطبيق مقفل', style: TextStyle(color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _requestingPermission ? null : _enablePushNotifications,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: _requestingPermission
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                        : const Text('تفعيل', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: _isLoading
+                ? _buildLoadingSkeleton()
+                : _notifications.isEmpty
+                    ? const EmptyState(type: EmptyStateType.notifications)
+                    : _buildNotificationsList(isDark),
+          ),
+        ],
+      ),
     );
   }
 

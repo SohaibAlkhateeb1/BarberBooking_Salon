@@ -18,14 +18,15 @@ class NotificationService {
   final ApiClient _apiClient = ApiClient();
 
   String? _fcmToken;
-  bool _webInitialized = false;
 
   String? get fcmToken => _fcmToken;
+
+  bool get isWebPermissionGranted => kIsWeb && WebNotificationHelper.hasPermission;
+  bool get webNeedsPermission => kIsWeb && !WebNotificationHelper.hasPermission;
 
   Future<void> initialize() async {
     try {
       if (kIsWeb) {
-        await _initWebNotifications();
         await _getToken();
         _setupMessageHandlers();
       } else {
@@ -39,15 +40,18 @@ class NotificationService {
     }
   }
 
-  Future<void> _initWebNotifications() async {
-    if (_webInitialized) return;
-    _webInitialized = true;
+  Future<bool> requestWebPermission() async {
     try {
       final granted = await WebNotificationHelper.requestPermission();
-      print('Web notification permission granted: $granted');
-      print('Web needsInstallPrompt: ${WebNotificationHelper.needsInstallPrompt}');
+      print('Web notification permission result: $granted');
+
+      if (granted && _fcmToken == null) {
+        await _getToken();
+      }
+      return granted;
     } catch (e) {
-      print('Web notification init error: $e');
+      print('Web permission request error: $e');
+      return false;
     }
   }
 
@@ -60,7 +64,6 @@ class NotificationService {
         provisional: false,
         criticalAlert: true,
       );
-
       print('Notification permission: ${settings.authorizationStatus}');
     } catch (e) {
       print('Permission request failed: $e');
