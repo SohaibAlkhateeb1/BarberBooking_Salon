@@ -45,7 +45,8 @@ class NotificationService {
       final granted = await WebNotificationHelper.requestPermission();
       print('Web notification permission result: $granted');
 
-      if (granted && _fcmToken == null) {
+      if (granted) {
+        await Future.delayed(const Duration(seconds: 2));
         await _getToken();
       }
       return granted;

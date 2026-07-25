@@ -9,6 +9,7 @@ public class BookingReminderService : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<BookingReminderService> _logger;
     private static readonly TimeZoneInfo PalestineTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Hebron");
+    private bool _isRunning = false;
 
     public BookingReminderService(IServiceProvider serviceProvider, ILogger<BookingReminderService> logger)
     {
@@ -20,13 +21,21 @@ public class BookingReminderService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            try
+            if (!_isRunning)
             {
-                await CheckAndSendReminders();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in BookingReminderService");
+                try
+                {
+                    _isRunning = true;
+                    await CheckAndSendReminders();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in BookingReminderService");
+                }
+                finally
+                {
+                    _isRunning = false;
+                }
             }
 
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
@@ -43,8 +52,6 @@ public class BookingReminderService : BackgroundService
         var reminderWindow = nowLocal.AddMinutes(30);
         var fiveMinutesAgo = nowLocal.AddMinutes(-5);
 
-        _logger.LogDebug("Reminder check at local time {LocalTime}, window {Window}", nowLocal, reminderWindow);
-
         var upcomingBookings = await context.Bookings
             .Include(b => b.BarberProfile)
                 .ThenInclude(bp => bp.User)
@@ -55,12 +62,7 @@ public class BookingReminderService : BackgroundService
 
         foreach (var booking in upcomingBookings)
         {
-            // BookingDate is stored as local date but with Kind=Unspecified or Utc
-            // BookingTime is the local time of the appointment
             var bookingLocal = booking.BookingDate.Date + booking.BookingTime;
-
-            _logger.LogDebug("Booking {BookingId}: bookingLocal={BookingLocal}, nowLocal={NowLocal}, inWindow={InWindow}",
-                booking.Id, bookingLocal, nowLocal, bookingLocal > fiveMinutesAgo && bookingLocal <= reminderWindow);
 
             if (bookingLocal > fiveMinutesAgo && bookingLocal <= reminderWindow)
             {
@@ -72,12 +74,12 @@ public class BookingReminderService : BackgroundService
                 // --- Customer reminder ---
                 var customerAlreadyReminded = await context.Notifications
                     .AnyAsync(n => n.UserId == booking.CustomerId
-                        && n.Type == "reminder"
+                        && (n.Type == "reminder" || n.Type == "service_reminder")
                         && n.Data == booking.Id.ToString());
 
                 if (!customerAlreadyReminded)
                 {
-                    context.Notifications.Add(new Notification
+                    var notification = new Notification
                     {
                         UserId = booking.CustomerId,
                         Title = "تذكير بموعد الحلاقة",
@@ -85,7 +87,9 @@ public class BookingReminderService : BackgroundService
                         Type = "reminder",
                         IsRead = false,
                         Data = booking.Id.ToString()
-                    });
+                    };
+                    context.Notifications.Add(notification);
+                    await context.SaveChangesAsync();
 
                     try
                     {
@@ -104,19 +108,17 @@ public class BookingReminderService : BackgroundService
                     {
                         _logger.LogWarning(ex, "Failed to send FCM reminder to customer {CustomerId}", booking.CustomerId);
                     }
-
-                    _logger.LogInformation("Customer reminder sent for booking {BookingId}", booking.Id);
                 }
 
                 // --- Barber reminder ---
                 var barberAlreadyReminded = await context.Notifications
                     .AnyAsync(n => n.UserId == booking.BarberProfile.UserId
-                        && n.Type == "reminder"
+                        && (n.Type == "reminder" || n.Type == "service_reminder")
                         && n.Data == booking.Id.ToString());
 
                 if (!barberAlreadyReminded)
                 {
-                    context.Notifications.Add(new Notification
+                    var notification = new Notification
                     {
                         UserId = booking.BarberProfile.UserId,
                         Title = "تذكير بموعد",
@@ -124,7 +126,9 @@ public class BookingReminderService : BackgroundService
                         Type = "reminder",
                         IsRead = false,
                         Data = booking.Id.ToString()
-                    });
+                    };
+                    context.Notifications.Add(notification);
+                    await context.SaveChangesAsync();
 
                     try
                     {
@@ -143,12 +147,8 @@ public class BookingReminderService : BackgroundService
                     {
                         _logger.LogWarning(ex, "Failed to send FCM reminder to barber {BarberUserId}", booking.BarberProfile.UserId);
                     }
-
-                    _logger.LogInformation("Barber reminder sent for booking {BookingId}", booking.Id);
                 }
             }
         }
-
-        await context.SaveChangesAsync();
     }
 }
