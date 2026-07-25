@@ -6,7 +6,9 @@ import '../../../core/storage/token_storage.dart';
 import '../../role_selection/presentation/role_selection_screen.dart';
 import '../../main_shell/presentation/main_shell.dart';
 import '../../barber_dashboard/presentation/barber_main_shell.dart';
+import '../../barber_dashboard/presentation/pending_approval_screen.dart';
 import '../../auth/presentation/otp_verification_screen.dart';
+import '../../../core/network/api_client.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -78,7 +80,21 @@ class _SplashScreenState extends State<SplashScreen>
     if (isLoggedIn) {
       final role = await tokenStorage.getRole();
       if (role == 'Barber') {
-        Get.offAll(() => const BarberMainShell());
+        // Check if barber account is active
+        try {
+          final api = ApiClient();
+          final res = await api.dio.get('/api/auth/check-status');
+          final isActive = res.data['isActive'] == true;
+          if (!mounted) return;
+          if (isActive) {
+            Get.offAll(() => const BarberMainShell());
+          } else {
+            Get.offAll(() => const PendingApprovalScreen());
+          }
+        } catch (_) {
+          if (!mounted) return;
+          Get.offAll(() => const BarberMainShell());
+        }
       } else {
         Get.offAll(() => const MainShell());
       }

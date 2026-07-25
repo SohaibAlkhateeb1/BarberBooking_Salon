@@ -13,6 +13,7 @@ import '../../../core/widgets/password_field.dart';
 import '../../auth/presentation/forgot_password_screen.dart';
 import '../../barber_registration/presentation/barber_registration_screen.dart';
 import '../../barber_dashboard/presentation/barber_main_shell.dart';
+import '../../barber_dashboard/presentation/pending_approval_screen.dart';
 import '../data/barber_auth_service.dart';
 
 class BarberLoginScreen extends StatefulWidget {
@@ -62,7 +63,23 @@ class _BarberLoginScreenState extends State<BarberLoginScreen> {
       } catch (_) {}
 
       if (!mounted) return;
-      Get.offAll(() => const BarberMainShell());
+
+      // Check if account is active
+      try {
+        final api = ApiClient();
+        final res = await api.dio.get('/api/auth/check-status');
+        final isActive = res.data['isActive'] == true;
+        if (!mounted) return;
+
+        if (isActive) {
+          Get.offAll(() => const BarberMainShell());
+        } else {
+          Get.offAll(() => const PendingApprovalScreen());
+        }
+      } catch (_) {
+        // If check-status fails, still go to pending screen (safer)
+        if (mounted) Get.offAll(() => const PendingApprovalScreen());
+      }
     } catch (e) {
       String msg = extractErrorMessage(e);
       setState(() {
