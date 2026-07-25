@@ -113,6 +113,21 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
     }
   }
 
+  bool _isBeforeStartTime(BookingModel booking) {
+    try {
+      final dateStr = booking.bookingDate.split('T')[0];
+      final parts = dateStr.split('-');
+      final timeParts = booking.bookingTime.split(':');
+      final bookingStart = DateTime(
+        int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]),
+        int.parse(timeParts[0]), int.parse(timeParts[1]),
+      );
+      return DateTime.now().isBefore(bookingStart);
+    } catch (_) {
+      return true;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -219,7 +234,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
 
   Widget _buildBookingCard(BookingModel booking) {
     final isCancelled = booking.status == 'Cancelled' || booking.status == 'Rejected' || booking.status == 'Expired' || booking.status == 'NoShow';
-    final canCancelOrReschedule = booking.status == 'Pending' || booking.status == 'Accepted';
+    final canCancelOrReschedule = (booking.status == 'Pending' || booking.status == 'Accepted') && _isBeforeStartTime(booking);
 
     return PressEffect(
       onTap: () {

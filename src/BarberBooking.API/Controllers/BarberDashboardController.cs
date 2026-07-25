@@ -32,7 +32,7 @@ public class BarberDashboardController : ControllerBase
     {
         var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
         if (string.IsNullOrEmpty(sub))
-            throw new UnauthorizedAccessException("رقم الخطأ");
+            throw new UnauthorizedAccessException("غير مصرح");
         return Guid.Parse(sub);
     }
 
@@ -218,7 +218,7 @@ public class BarberDashboardController : ControllerBase
         {
             UserId = booking.CustomerId,
             Title = "تم تأكيد الموعد",
-            Message = $"تم تأكيد موعدك — {booking.BarberService.Name} ظٹظˆظ… {booking.BookingDate:yyyy-MM-dd} ط§ظ„الساعة {booking.BookingTime:hh\\:mm}",
+            Message = $"تم تأكيد موعدك — {booking.BarberService.Name} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {booking.BookingTime:hh\\:mm}",
             Type = "booking",
             IsRead = false,
             Data = booking.Id.ToString()
@@ -229,7 +229,7 @@ public class BarberDashboardController : ControllerBase
         await _fcm.SendToUser(
             booking.CustomerId,
             "تم تأكيد موعدك ",
-            $"تم تأكيد موعدك — {booking.BarberService.Name} ظٹظˆظ… {booking.BookingDate:yyyy-MM-dd} ط§ظ„الساعة {booking.BookingTime:hh\\:mm}",
+            $"تم تأكيد موعدك — {booking.BarberService.Name} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {booking.BookingTime:hh\\:mm}",
             new Dictionary<string, string>
             {
                 { "type", "booking_update" },
@@ -354,7 +354,7 @@ public class BarberDashboardController : ControllerBase
         {
             UserId = booking.CustomerId,
             Title = "بانتظار الدفع",
-            Message = $"انتهت خدمة {booking.BarberService.Name}. المبلغ: {booking.FinalPrice}₪ — ظٹط±ط¬ظ‰ إتمام الدفع.",
+            Message = $"انتهت خدمة {booking.BarberService.Name}. المبلغ: {booking.FinalPrice}₪ — يرجى إتمام الدفع.",
             Type = "booking",
             IsRead = false,
             Data = booking.Id.ToString()
@@ -418,15 +418,15 @@ public class BarberDashboardController : ControllerBase
         {
             customer.IsBookingBlocked = true;
             customer.BookingBlockedAt = DateTime.UtcNow;
-            customer.BlockReason = $"عدم الحضور المتكرر ({customer.NoShowCount} ظ…ط±ط§طھ)";
+            customer.BlockReason = $"عدم الحضور المتكرر ({customer.NoShowCount} مرات)";
 
             notificationTitle = "تم حظرك من الحجز";
-            notificationMessage = $"طھظ… ط­ط¸ط±ظƒ ظ…ظ† انشاء حجوزات جديدة ط¨ط³ط¨ط¨ عدم الحضور المتكرر ({customer.NoShowCount} ظ…ط±ط§طھ). تواصل مع الحلاق ط£ظˆ الدعم الفني لفك الحظر.";
+            notificationMessage = $"تم حظرك من انشاء حجوزات جديدة بسبب عدم الحضور المتكرر ({customer.NoShowCount} مرات). تواصل مع الحلاق أو الدعم الفني لفك الحظر.";
         }
         else
         {
             notificationTitle = "تنبيه: عدم الحضور";
-            notificationMessage = $"لم يحضر للموعد — {booking.BarberService.Name} ظٹظˆظ… {booking.BookingDate:yyyy-MM-dd}. تنبيه: تكرار عدم الحضور قد يؤدي الى إيقاف الحجز.";
+            notificationMessage = $"لم يحضر للموعد — {booking.BarberService.Name} يوم {booking.BookingDate:yyyy-MM-dd}. تنبيه: تكرار عدم الحضور قد يؤدي الى إيقاف الحجز.";
         }
 
         await _context.SaveChangesAsync();
@@ -843,7 +843,7 @@ public class BarberDashboardController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = $"ط®ط·ط£: {ex.Message}" });
+            return StatusCode(500, new { message = $"خطأ: {ex.Message}" });
         }
     }
 
@@ -920,7 +920,7 @@ public class BarberDashboardController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = $"ط®ط·ط£: {ex.Message}" });
+            return StatusCode(500, new { message = $"خطأ: {ex.Message}" });
         }
     }
 
@@ -1009,7 +1009,7 @@ public class BarberDashboardController : ControllerBase
         var subscriptionService = HttpContext.RequestServices.GetRequiredService<ISubscriptionService>();
         var canAdd = await subscriptionService.CanAddEmployeeAsync(profile.Id);
         if (!canAdd)
-            return BadRequest(new { message = "خطأ الحالة ظ„ط§ طھط³ظ…ط­ ط¨ط¥ط¶ط§ظپط© ظ…ظˆط¸ظپظٹظ†. ظ‚ظ… ط¨ط§ظ„طھط±ظ‚ظٹط© ظ„ط®ط·ط© ط£ط¹ظ„ظ‰." });
+            return BadRequest(new { message = "لا يمكن اضافة المزيد من الموظفين. قم بالترقية لخطه أعلى." });
 
         var employee = new BarberEmployee
         {
@@ -1262,7 +1262,7 @@ public class BarberDashboardController : ControllerBase
         var subscriptionService = HttpContext.RequestServices.GetRequiredService<ISubscriptionService>();
         var canUse = await subscriptionService.CanUseAnalyticsAsync(profile.Id);
         if (!canUse)
-            return BadRequest(new { message = "يجب الاشتراك في خطه الاحترازية او المجانية لعرض التحليلاات" });
+            return BadRequest(new { message = "يجب الاشتراك في خطه مدفوعة لعرض التحليلات" });
 
         var currentSubscription = await subscriptionService.GetCurrentSubscriptionAsync(profile.Id);
         var isAdvanced = currentSubscription?.AnalyticsLevel == "advanced";

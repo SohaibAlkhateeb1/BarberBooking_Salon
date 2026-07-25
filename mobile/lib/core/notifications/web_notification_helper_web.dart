@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:js_util' as js_util;
 import 'dart:js' as js;
 
@@ -8,29 +9,42 @@ class WebNotificationPlatform {
     try {
       final hasApi = js.context.callMethod('eval', ["typeof Notification !== 'undefined'"]);
       if (hasApi != true) {
-        print('Notification API not available in this browser');
+        print('Notification API not available');
         return false;
       }
 
       final currentPermission = js.context.callMethod('eval', ['Notification.permission']);
-      print('Current notification permission: $currentPermission');
+      print('Current permission before request: $currentPermission');
 
       if (currentPermission == 'granted') {
         _permissionGranted = true;
-        print('Notification permission already granted');
         return true;
       }
 
       if (currentPermission == 'denied') {
-        print('Notification permission was denied by user previously');
+        print('Permission was previously denied');
         return false;
       }
 
-      final promise = js.context.callMethod('eval', ["Notification.requestPermission()"]);
-      final result = await js_util.promiseToFuture(promise);
-      print('Notification.requestPermission() result: $result');
-      _permissionGranted = (result == 'granted');
-      return _permissionGranted;
+      js.context.callMethod('eval', ['Notification.requestPermission()']);
+
+      for (int i = 0; i < 30; i++) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        final perm = js.context.callMethod('eval', ['Notification.permission']);
+        print('Permission check $i: $perm');
+        if (perm == 'granted') {
+          _permissionGranted = true;
+          print('Permission granted after ${i * 500}ms');
+          return true;
+        }
+        if (perm == 'denied') {
+          print('Permission denied after ${i * 500}ms');
+          return false;
+        }
+      }
+
+      print('Permission timeout, still default');
+      return false;
     } catch (e) {
       print('Web permission request error: $e');
       return false;
@@ -52,10 +66,7 @@ class WebNotificationPlatform {
   }
 
   static void showNotification({required String title, required String body}) {
-    if (!_permissionGranted) {
-      print('No notification permission, skip show');
-      return;
-    }
+    if (!_permissionGranted) return;
     try {
       final options = js_util.jsify({
         'body': body,
@@ -63,7 +74,6 @@ class WebNotificationPlatform {
         'badge': '/icons/Icon-192.png',
         'tag': 'barberbooking-${DateTime.now().millisecondsSinceEpoch}',
       });
-
       js.context['Notification'].callMethod('new', [title, options]);
       print('Browser notification shown: $title');
     } catch (e) {

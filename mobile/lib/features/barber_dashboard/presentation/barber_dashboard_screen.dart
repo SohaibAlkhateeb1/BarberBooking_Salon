@@ -14,6 +14,7 @@ import '../../../core/widgets/widgets.dart';
 import '../../../core/animations/app_animations.dart';
 import '../data/barber_dashboard_service.dart';
 import 'barber_booking_detail_screen.dart';
+import 'barber_notifications_screen.dart';
 
 class BarberDashboardScreen extends StatefulWidget {
   const BarberDashboardScreen({super.key});
@@ -30,6 +31,7 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   Timer? _refreshTimer;
   bool _showPushBanner = false;
   bool _requestingPermission = false;
+  int _unreadCount = 0;
 
   @override
   void initState() {
@@ -37,7 +39,10 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     _loadDashboard();
     _checkPushBanner();
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) _loadDashboard();
+      if (mounted) {
+        _loadDashboard();
+        _loadUnreadCount();
+      }
     });
   }
 
@@ -54,11 +59,25 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
     try {
       final data = await _service.getDashboard();
       if (mounted) setState(() { _dashboard = data; _isLoading = false; _error = null; });
+      _loadUnreadCount();
     } catch (e) {
       if (_dashboard == null && mounted) {
         setState(() { _error = 'حدث خطأ'; _isLoading = false; });
       }
     }
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final api = ApiClient();
+      final response = await api.dio.get('/api/notifications');
+      final data = response.data;
+      final notifications = data is Map ? data['notifications'] as List? : data as List?;
+      if (notifications != null && mounted) {
+        final unread = notifications.where((n) => n['isRead'] == false).length;
+        setState(() => _unreadCount = unread);
+      }
+    } catch (_) {}
   }
 
   Future<void> _checkPushBanner() async {
@@ -247,17 +266,43 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: context.surfaceColor,
-            borderRadius: BorderRadius.circular(AppBorderRadius.md),
-            border: Border.all(color: context.cardBorderColor),
-          ),
-          child: Icon(
-            Icons.notifications_outlined,
-            color: context.textColor,
-            size: 22,
+        GestureDetector(
+          onTap: () => Get.to(() => const BarberNotificationsScreen(), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 250))?.then((_) => _loadUnreadCount()),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: context.surfaceColor,
+              borderRadius: BorderRadius.circular(AppBorderRadius.md),
+              border: Border.all(color: context.cardBorderColor),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  Icons.notifications_outlined,
+                  color: context.textColor,
+                  size: 22,
+                ),
+                if (_unreadCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        _unreadCount > 99 ? '99+' : '$_unreadCount',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ],

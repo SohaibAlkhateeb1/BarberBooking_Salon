@@ -23,7 +23,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [counts, setCounts] = useState<OperationsCounts | null>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [hasNewNotification, setHasNewNotification] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
@@ -84,7 +83,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="relative">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => {
+                router.push("/dashboard/operations");
+              }}
               className="relative p-2 rounded-lg hover:bg-muted transition-colors"
             >
               <Bell className={`size-5 transition-colors ${hasNewNotification ? "text-amber-500" : "text-muted-foreground"}`} />
@@ -94,62 +95,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </span>
               )}
             </button>
-
-            {showNotifications && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-                <div className="absolute left-0 top-full mt-2 w-72 bg-card border rounded-xl shadow-xl z-50 overflow-hidden">
-                  <div className="p-3 border-b bg-muted/50">
-                    <p className="text-sm font-bold">الإشعارات</p>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto divide-y">
-                    {counts?.payments.pending ? (
-                      <Link
-                        href="/dashboard/payments"
-                        onClick={() => setShowNotifications(false)}
-                        className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                          <Banknote className="size-4 text-emerald-500" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">طلبات دفع معلقة</p>
-                          <p className="text-xs text-muted-foreground">{counts.payments.pending} طلب بانتظار المراجعة</p>
-                        </div>
-                        <span className="bg-emerald-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
-                          {counts.payments.pending}
-                        </span>
-                      </Link>
-                    ) : null}
-
-                    {counts?.pendingActions.total ? (
-                      <Link
-                        href="/dashboard/operations"
-                        onClick={() => setShowNotifications(false)}
-                        className="flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="size-8 rounded-full bg-red-500/10 flex items-center justify-center">
-                          <ClipboardList className="size-4 text-red-500" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">عمليات تحتاج مراجعة</p>
-                          <p className="text-xs text-muted-foreground">{counts.pendingActions.total} عنصر بانتظار المراجعة</p>
-                        </div>
-                        <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
-                          {counts.pendingActions.total}
-                        </span>
-                      </Link>
-                    ) : null}
-
-                    {!counts?.payments.pending && !counts?.pendingActions.total && (
-                      <div className="p-6 text-center text-sm text-muted-foreground">
-                        لا توجد إشعارات جديدة
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         </div>
         <nav className="flex-1 p-2 space-y-1">

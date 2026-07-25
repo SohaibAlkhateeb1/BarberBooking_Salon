@@ -169,7 +169,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                   ),
                   const SizedBox(height: 20),
                 ],
-                if (booking.status == 'Pending' || booking.status == 'Accepted') ...[
+                if ((booking.status == 'Pending' || booking.status == 'Accepted') && _isBeforeStartTime(booking)) ...[
                   FadeIn(
                     delay: const Duration(milliseconds: 700),
                     child: _buildActionButtons(booking),
@@ -492,6 +492,21 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
         ],
       ),
     );
+  }
+
+  bool _isBeforeStartTime(BookingDetailModel booking) {
+    try {
+      final dateStr = booking.bookingDate.split('T')[0];
+      final parts = dateStr.split('-');
+      final timeParts = booking.bookingTime.split(':');
+      final bookingStart = DateTime(
+        int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]),
+        int.parse(timeParts[0]), int.parse(timeParts[1]),
+      );
+      return DateTime.now().isBefore(bookingStart);
+    } catch (_) {
+      return true;
+    }
   }
 
   Widget _buildActionButtons(BookingDetailModel booking) {

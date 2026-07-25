@@ -30,7 +30,7 @@ public class CustomerController : ControllerBase
     {
         var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
         if (string.IsNullOrEmpty(sub))
-            throw new UnauthorizedAccessException("ط؛ظٹط± ظ…طµط±ط­");
+            throw new UnauthorizedAccessException("غير مصرح");
         return Guid.Parse(sub);
     }
 
@@ -39,7 +39,7 @@ public class CustomerController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var user = await _context.Users.FindAsync(userId);
-        if (user == null) return NotFound(new { message = "ط§ظ„ظ…ط³طھط®ط¯ظ… ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+        if (user == null) return NotFound(new { message = "المستخدم غير موجود" });
 
         return Ok(new
         {
@@ -61,7 +61,7 @@ public class CustomerController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var user = await _context.Users.FindAsync(userId);
-        if (user == null) return NotFound(new { message = "ط§ظ„ظ…ط³طھط®ط¯ظ… ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+        if (user == null) return NotFound(new { message = "المستخدم غير موجود" });
 
         if (!string.IsNullOrEmpty(dto.FullName))
             user.FullName = dto.FullName;
@@ -79,7 +79,7 @@ public class CustomerController : ControllerBase
         user.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ… طھط­ط¯ظٹط« ط§ظ„ظ…ظ„ظپ ط§ظ„ط´ط®طµظٹ ط¨ظ†ط¬ط§ط­" });
+        return Ok(new { message = "تم تحديث الملف الشخصي بنجاح" });
     }
 
     [HttpPost("upload-image")]
@@ -90,7 +90,7 @@ public class CustomerController : ControllerBase
         {
             var userId = GetCurrentUserId();
             var user = await _context.Users.FindAsync(userId);
-            if (user == null) return NotFound(new { message = "ط§ظ„ظ…ط³طھط®ط¯ظ… ط؛ظٹط± ظ…ظˆط¬ظˆط¯" });
+            if (user == null) return NotFound(new { message = "المستخدم غير موجود" });
 
             using var reader = new StreamReader(Request.Body);
             var body = await reader.ReadToEndAsync();
@@ -98,7 +98,7 @@ public class CustomerController : ControllerBase
             _logger.LogInformation("Upload image received, body length: {Length}", body.Length);
 
             if (string.IsNullOrEmpty(body))
-                return BadRequest(new { message = "ط§ظ„طµظˆط±ط© ظ…ط·ظ„ظˆط¨ط©" });
+                return BadRequest(new { message = "الصورة مطلوبة" });
 
             using var doc = JsonDocument.Parse(body);
             if (doc.RootElement.TryGetProperty("imageBase64", out var imageProp))
@@ -114,18 +114,18 @@ public class CustomerController : ControllerBase
                     user.ProfileImageUrl = imageUrl;
                     user.UpdatedAt = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
-                    return Ok(new { profileImageUrl = user.ProfileImageUrl, message = "طھظ… ط±ظپط¹ ط§ظ„طµظˆط±ط© ط¨ظ†ط¬ط§ط­" });
+                    return Ok(new { profileImageUrl = user.ProfileImageUrl, message = "تم رفع الصورة بنجاح" });
                 }
             }
 
-            return BadRequest(new { message = "ط§ظ„طµظˆط±ط© ظ…ط·ظ„ظˆط¨ط©" });
+            return BadRequest(new { message = "الصورة مطلوبة" });
         }
         catch (Exception ex)
         {
             var innerMsg = ex.InnerException?.Message ?? "no inner exception";
             var fullMsg = ex.Message + " | Inner: " + innerMsg;
             _logger.LogError(ex, "Error uploading image: {FullMessage}", fullMsg);
-            return StatusCode(500, new { message = $"ط®ط·ط£ ظپظٹ ط±ظپط¹ ط§ظ„طµظˆط±ط©: {fullMsg}" });
+            return StatusCode(500, new { message = $"خطأ في رفع الصورة: {fullMsg}" });
         }
     }
 
@@ -173,7 +173,7 @@ public class CustomerController : ControllerBase
             .AnyAsync(f => f.UserId == userId && f.BarberProfileId == barberProfileId);
 
         if (exists)
-            return BadRequest(new { message = "ظپظٹ ط§ظ„ظ…ظپط¶ظ„ط© ط¨ط§ظ„ظپط¹ظ„" });
+            return BadRequest(new { message = "في المفضلة بالفعل" });
 
         var favorite = new Favorite
         {
@@ -184,7 +184,7 @@ public class CustomerController : ControllerBase
         _context.Set<Favorite>().Add(favorite);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ…طھ ط§ظ„ط¥ط¶ط§ظپط© ظ„ظ„ظ…ظپط¶ظ„ط©" });
+        return Ok(new { message = "تمت الإضافة للمفضلة" });
     }
 
     [HttpDelete("favorites/{barberProfileId}")]
@@ -195,12 +195,12 @@ public class CustomerController : ControllerBase
             .FirstOrDefaultAsync(f => f.UserId == userId && f.BarberProfileId == barberProfileId);
 
         if (favorite == null)
-            return NotFound(new { message = "ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ظپظٹ ط§ظ„ظ…ظپط¶ظ„ط©" });
+            return NotFound(new { message = "غير موجود في المفضلة" });
 
         _context.Set<Favorite>().Remove(favorite);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "طھظ…طھ ط§ظ„ط¥ط²ط§ظ„ط© ظ…ظ† ط§ظ„ظ…ظپط¶ظ„ط©" });
+        return Ok(new { message = "تمت الإزالة من المفضلة" });
     }
 
     [HttpGet("favorites/check/{barberProfileId}")]
@@ -236,4 +236,3 @@ public class CustomerController : ControllerBase
         return Ok(reviews);
     }
 }
-

@@ -306,6 +306,13 @@ public class BookingsController : ControllerBase
         if (booking.Status == "Cancelled" || booking.Status == "Rejected" || booking.Status == "Completed" || booking.Status == "NoShow" || booking.Status == "Expired")
             return BadRequest(new { message = "لا يمكن إلغاء هذا الحجز" });
 
+        // === Time-based cancel block ===
+        var bookingStartUtc = booking.BookingDate.Date + booking.BookingTime;
+        if (bookingStartUtc.Kind != DateTimeKind.Utc)
+            bookingStartUtc = DateTime.SpecifyKind(bookingStartUtc, DateTimeKind.Utc);
+        if (DateTime.UtcNow >= bookingStartUtc)
+            return BadRequest(new { message = "لا يمكن إلغاء الحجز بعد موعد البداية" });
+
         // === Daily cancellation limit check ===
         var user = await _context.Users.FindAsync(userId);
         if (user != null)

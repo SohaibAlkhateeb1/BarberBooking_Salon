@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:js' as js;
+import 'platform_check_stub.dart'
+    if (dart.library.js_interop) 'platform_check_web.dart';
 
 class PwaInstallBanner extends StatefulWidget {
   final Widget child;
@@ -24,10 +25,8 @@ class _PwaInstallBannerState extends State<PwaInstallBanner> {
 
   void _checkAndShowBanner() {
     try {
-      final isIos = _isIosBrowser();
-      final isStandalone = _isStandalone();
-
-      print('PWA check: isIos=$isIos, isStandalone=$isStandalone');
+      final isIos = PlatformCheck.isIosBrowser();
+      final isStandalone = PlatformCheck.isStandalone();
 
       if (isIos && !isStandalone && !_dismissed) {
         Future.delayed(const Duration(seconds: 3), () {
@@ -37,31 +36,7 @@ class _PwaInstallBannerState extends State<PwaInstallBanner> {
         });
       }
     } catch (e) {
-      print('PWA install check error: $e');
-    }
-  }
-
-  bool _isIosBrowser() {
-    try {
-      final ua = js.context['navigator']['userAgent'].toString().toLowerCase();
-      return ua.contains('iphone') || ua.contains('ipad') || ua.contains('ipod');
-    } catch (e) {
-      return false;
-    }
-  }
-
-  bool _isStandalone() {
-    try {
-      final standalone = js.context['navigator']['standalone'];
-      if (standalone != null && standalone.toString() == 'true') return true;
-      final mq = js.context['matchMedia']?.callMethod(
-        'call',
-        [js.context['window'], '(display-mode: standalone)'],
-      );
-      if (mq != null && mq['matches'] == true) return true;
-      return false;
-    } catch (e) {
-      return false;
+      debugPrint('PWA install check error: $e');
     }
   }
 
