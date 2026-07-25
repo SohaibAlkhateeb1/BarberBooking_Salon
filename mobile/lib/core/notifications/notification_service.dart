@@ -137,20 +137,13 @@ class NotificationService {
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     print('Foreground message: ${message.notification?.title}');
 
-    if (message.notification != null) {
-      final title = message.notification!.title ?? '';
-      final body = message.notification!.body ?? '';
-
-      if (kIsWeb) {
-        WebNotificationHelper.showNotification(title: title, body: body);
-      } else {
-        await _showLocalNotification(
-          id: message.hashCode,
-          title: title,
-          body: body,
-          data: message.data,
-        );
-      }
+    if (!kIsWeb && message.notification != null) {
+      await _showLocalNotification(
+        id: message.hashCode,
+        title: message.notification!.title ?? '',
+        body: message.notification!.body ?? '',
+        data: message.data,
+      );
     }
   }
 

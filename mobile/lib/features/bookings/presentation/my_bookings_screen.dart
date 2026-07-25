@@ -202,12 +202,17 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
         subtitle: 'لم تقم بأي حجز حتى الآن',
       );
     }
-    return ListView.builder(
-      padding: AppSpacing.pageAll,
-      itemCount: bookings.length,
-      itemBuilder: (context, index) => FadeIn(
-        delay: Duration(milliseconds: index * 80),
-        child: _buildBookingCard(bookings[index]),
+    return RefreshIndicator(
+      onRefresh: _loadBookings,
+      color: AppColors.primary,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: AppSpacing.pageAll,
+        itemCount: bookings.length,
+        itemBuilder: (context, index) => FadeIn(
+          delay: Duration(milliseconds: index * 80),
+          child: _buildBookingCard(bookings[index]),
+        ),
       ),
     );
   }

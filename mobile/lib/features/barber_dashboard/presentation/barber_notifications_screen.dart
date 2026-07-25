@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/notifications/notification_service.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/animations/app_animations.dart';
 
@@ -43,8 +41,6 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> {
   List<NotificationModel> _notifications = [];
   bool _isLoading = true;
   Timer? _refreshTimer;
-  bool _pushEnabled = kIsWeb ? NotificationService().isWebPermissionGranted : true;
-  bool _requestingPermission = false;
 
   @override
   void initState() {
@@ -119,27 +115,6 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> {
     return 'الآن';
   }
 
-  Future<void> _enablePushNotifications() async {
-    setState(() => _requestingPermission = true);
-    try {
-      final granted = await NotificationService().requestWebPermission();
-      if (mounted) {
-        setState(() {
-          _pushEnabled = granted;
-          _requestingPermission = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(granted ? 'تم تفعيل الإشعارات بنجاح' : 'لم يتم تفعيل الإشعارات'),
-            backgroundColor: granted ? AppColors.success : AppColors.error,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) setState(() => _requestingPermission = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -168,65 +143,11 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> {
           ],
         ],
       ),
-      body: Column(
-        children: [
-          if (kIsWeb && !_pushEnabled)
-            GestureDetector(
-              onTap: _requestingPermission ? null : _enablePushNotifications,
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A3D2E),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary, width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.notifications_active, color: Colors.black, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('فعّل إشعارات الدفع', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 2),
-                          Text('استلم إشعارات حتى لو التطبيق مقفل', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: _requestingPermission
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                          : const Text('تفعيل', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          Expanded(
-            child: _isLoading
-                ? _buildLoadingSkeleton()
-                : _notifications.isEmpty
-                    ? const EmptyState(type: EmptyStateType.notifications)
-                    : _buildNotificationsList(isDark),
-          ),
-        ],
-      ),
+      body: _isLoading
+          ? _buildLoadingSkeleton()
+          : _notifications.isEmpty
+              ? const EmptyState(type: EmptyStateType.notifications)
+              : _buildNotificationsList(isDark),
     );
   }
 
