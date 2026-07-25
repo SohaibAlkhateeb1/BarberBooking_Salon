@@ -1,7 +1,9 @@
 {
     "name": "BarberBooking - حجز خدمات الحلاقة",
     "short_name": "BarberBooking",
-    "start_url": ".",
+    "id": "barber-booking-c5fd6",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#121212",
     "theme_color": "#0DF1B5",

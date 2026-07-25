@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/notifications/notification_service.dart';
+import 'core/widgets/pwa_install_banner.dart';
 import 'features/splash/presentation/splash_screen.dart';
 import 'firebase_options.dart';
 
@@ -53,7 +54,7 @@ class BarberBookingApp extends StatelessWidget {
         Locale('ar', 'SA'),
         Locale('en', 'US'),
       ],
-      home: const SplashScreen(),
+      home: PwaInstallBanner(child: const SplashScreen()),
     ));
   }
 }
