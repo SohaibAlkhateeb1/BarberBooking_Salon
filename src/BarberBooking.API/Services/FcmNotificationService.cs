@@ -130,25 +130,27 @@ public class FcmNotificationService : IFirebasePushService
 
     public async Task SendToUser(Guid userId, string title, string body, Dictionary<string, string>? data = null)
     {
-        var tokens = await _context.UserDevices
+        var latestToken = await _context.UserDevices
             .Where(ud => ud.UserId == userId && ud.IsActive)
+            .OrderByDescending(ud => ud.LastUsedAt)
             .Select(ud => ud.FcmToken)
-            .ToListAsync();
+            .FirstOrDefaultAsync();
 
-        if (tokens.Count == 0)
+        if (string.IsNullOrEmpty(latestToken))
         {
             _logger.LogWarning("No device tokens found for user {UserId}", userId);
             return;
         }
 
-        await SendToTokens(tokens, title, body, data);
+        await SendToTokens(new List<string> { latestToken }, title, body, data);
     }
 
     public async Task SendToAllCustomers(string title, string body, Dictionary<string, string>? data = null)
     {
         var tokens = await _context.UserDevices
             .Where(ud => ud.User.Role == "Customer" && ud.IsActive)
-            .Select(ud => ud.FcmToken)
+            .GroupBy(ud => ud.UserId)
+            .Select(g => g.OrderByDescending(ud => ud.LastUsedAt).Select(ud => ud.FcmToken).First())
             .ToListAsync();
 
         if (tokens.Count == 0) return;
