@@ -22,12 +22,12 @@ public class PendingBookingExpiryService : BackgroundService
             try
             {
                 await CheckPendingBookingsAsync();
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error checking pending bookings");
-                await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
             }
         }
     }

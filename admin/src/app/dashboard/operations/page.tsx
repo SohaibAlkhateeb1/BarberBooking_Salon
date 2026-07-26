@@ -190,18 +190,6 @@ export default function OperationsCenterPage() {
     else if (activeTab === "alerts") fetchAlerts();
   }, [activeTab, fetchTickets, fetchVerifications, fetchPasswordResets, fetchAlerts]);
 
-  // Auto-refresh
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchCounts();
-      if (activeTab === "tickets") fetchTickets();
-      else if (activeTab === "verifications") fetchVerifications();
-      else if (activeTab === "passwordResets") fetchPasswordResets();
-      else if (activeTab === "alerts") fetchAlerts();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [activeTab, fetchCounts, fetchTickets, fetchVerifications, fetchPasswordResets, fetchAlerts]);
-
   // ===== TICKET HANDLERS =====
 
   const handleViewTicket = async (ticket: any) => {

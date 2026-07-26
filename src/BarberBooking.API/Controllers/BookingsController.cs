@@ -179,9 +179,9 @@ public class BookingsController : ControllerBase
             .Include(b => b.BarberProfile)
                 .ThenInclude(bp => bp.User)
             .Include(b => b.BarberService)
-            .Include(b => b.Customer)
             .Include(b => b.Employee)
             .Where(b => b.CustomerId == userId)
+            .AsNoTracking()
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(status))

@@ -10,8 +10,11 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/time_formatter.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/notifications/notification_service.dart';
+import '../../../core/events/app_event_bus.dart';
+import '../../../core/events/app_events.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/animations/app_animations.dart';
+import '../../../main.dart';
 import '../data/barber_dashboard_service.dart';
 import 'barber_booking_detail_screen.dart';
 import 'barber_notifications_screen.dart';
@@ -23,23 +26,24 @@ class BarberDashboardScreen extends StatefulWidget {
   State<BarberDashboardScreen> createState() => _BarberDashboardScreenState();
 }
 
-class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
+class _BarberDashboardScreenState extends State<BarberDashboardScreen> with RouteAware, WidgetsBindingObserver {
   final BarberDashboardService _service = BarberDashboardService(ApiClient());
   BarberDashboardModel? _dashboard;
   bool _isLoading = true;
   String? _error;
-  Timer? _refreshTimer;
   bool _showPushBanner = false;
   bool _requestingPermission = false;
   int _unreadCount = 0;
+  StreamSubscription<Map<String, dynamic>>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadDashboard();
     _checkPushBanner();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) {
+    _eventSubscription = AppEventBus().stream.listen((event) {
+      if (event['type'] == AppEvents.fcmReceived && mounted) {
         _loadDashboard();
         _loadUnreadCount();
       }
@@ -47,8 +51,32 @@ class _BarberDashboardScreenState extends State<BarberDashboardScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    if (mounted) {
+      _loadDashboard();
+      _loadUnreadCount();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadDashboard();
+      _loadUnreadCount();
+    }
+  }
+
+  @override
   void dispose() {
-    _refreshTimer?.cancel();
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
+    _eventSubscription?.cancel();
     super.dispose();
   }
 

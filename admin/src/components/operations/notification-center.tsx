@@ -21,8 +21,6 @@ export function NotificationCenter({ unreadCount }: { unreadCount: number }) {
 
   useEffect(() => {
     fetchActivities();
-    const interval = setInterval(fetchActivities, 30000);
-    return () => clearInterval(interval);
   }, [fetchActivities]);
 
   const colorMap: Record<string, string> = {
@@ -36,7 +34,7 @@ export function NotificationCenter({ unreadCount }: { unreadCount: number }) {
 
   return (
     <div className="relative">
-      <Button variant="ghost" size="icon" className="relative" onClick={() => setOpen(!open)}>
+      <Button variant="ghost" size="icon" className="relative" onClick={() => { setOpen(!open); if (!open) fetchActivities(); }}>
         <Bell className="size-5" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">

@@ -9,10 +9,13 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../../core/notifications/notification_service.dart';
+import '../../../core/events/app_event_bus.dart';
+import '../../../core/events/app_events.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/utils/image_helper.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/animations/app_animations.dart';
+import '../../../main.dart';
 import '../../home/data/barbers_service.dart';
 import '../../account/data/customer_service.dart';
 import '../../search/presentation/search_screen.dart';
@@ -25,7 +28,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBindingObserver {
   final BarbersService _barbersService = BarbersService(ApiClient());
   final TokenStorage _tokenStorage = TokenStorage();
   final LocationService _locationService = LocationService();
@@ -36,23 +39,46 @@ class _HomeScreenState extends State<HomeScreen> {
   String _city = '';
   bool _hasLocation = false;
   String? _profileImageUrl;
-  Timer? _refreshTimer;
   bool _showPushBanner = false;
   bool _requestingPermission = false;
+  StreamSubscription<Map<String, dynamic>>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
     _checkPushBanner();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
-      if (mounted) _loadData();
+    _eventSubscription = AppEventBus().stream.listen((event) {
+      if (event['type'] == AppEvents.fcmReceived && mounted) {
+        _loadData();
+      }
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    if (mounted) _loadData();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadData();
+    }
+  }
+
+  @override
   void dispose() {
-    _refreshTimer?.cancel();
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
+    _eventSubscription?.cancel();
     super.dispose();
   }
 

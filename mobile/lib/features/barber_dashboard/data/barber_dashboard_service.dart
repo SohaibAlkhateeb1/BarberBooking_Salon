@@ -1,4 +1,7 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/cache/api_cache.dart';
+import '../../../core/events/app_event_bus.dart';
+import '../../../core/events/app_events.dart';
 
 class BarberDashboardModel {
   final String shopName;
@@ -190,8 +193,13 @@ class BarberDashboardService {
   BarberDashboardService(this._apiClient);
 
   Future<BarberDashboardModel> getDashboard() async {
+    final cached = ApiCache().get<BarberDashboardModel>('dashboard');
+    if (cached != null) return cached;
+
     final response = await _apiClient.dio.get('/api/barber/dashboard');
-    return BarberDashboardModel.fromJson(response.data);
+    final dashboard = BarberDashboardModel.fromJson(response.data);
+    ApiCache().set('dashboard', dashboard);
+    return dashboard;
   }
 
   Future<List<BarberBookingModel>> getBookings({String? status, String? date}) async {
@@ -216,10 +224,14 @@ class BarberDashboardService {
 
   Future<void> completeBooking(String id) async {
     await _apiClient.dio.put('/api/barber/dashboard/bookings/$id/complete');
+    _invalidateBookingCaches();
+    AppEventBus().fire(AppEvents.bookingCompleted);
   }
 
   Future<void> acceptBooking(String id) async {
     await _apiClient.dio.put('/api/barber/dashboard/bookings/$id/accept');
+    _invalidateBookingCaches();
+    AppEventBus().fire(AppEvents.bookingAccepted);
   }
 
   Future<void> rejectBooking(String id, {String? reason}) async {
@@ -227,18 +239,23 @@ class BarberDashboardService {
       '/api/barber/dashboard/bookings/$id/reject',
       data: {'reason': reason},
     );
+    _invalidateBookingCaches();
+    AppEventBus().fire(AppEvents.bookingCancelled);
   }
 
   Future<void> startBooking(String id) async {
     await _apiClient.dio.put('/api/barber/dashboard/bookings/$id/start');
+    _invalidateBookingCaches();
   }
 
   Future<void> requestPayment(String id) async {
     await _apiClient.dio.put('/api/barber/dashboard/bookings/$id/request-payment');
+    _invalidateBookingCaches();
   }
 
   Future<void> noShowBooking(String id) async {
     await _apiClient.dio.put('/api/barber/dashboard/bookings/$id/no-show');
+    _invalidateBookingCaches();
   }
 
   Future<void> rescheduleBooking(String id, {required String newDate, required String newTime}) async {
@@ -246,6 +263,13 @@ class BarberDashboardService {
       '/api/barber/dashboard/bookings/$id/reschedule',
       data: {'newDate': newDate, 'newTime': newTime},
     );
+    _invalidateBookingCaches();
+  }
+
+  void _invalidateBookingCaches() {
+    ApiCache().invalidate('dashboard');
+    ApiCache().invalidate('barber_bookings');
+    ApiCache().invalidate('my_bookings_all');
   }
 
   Future<List<BarberServiceModel>> getServices() async {

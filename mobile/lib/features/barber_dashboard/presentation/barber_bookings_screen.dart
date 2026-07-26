@@ -7,8 +7,11 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/time_formatter.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/events/app_event_bus.dart';
+import '../../../core/events/app_events.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/animations/app_animations.dart';
+import '../../../main.dart';
 import '../data/barber_dashboard_service.dart';
 import 'barber_booking_detail_screen.dart';
 
@@ -20,30 +23,67 @@ class BarberBookingsScreen extends StatefulWidget {
 }
 
 class _BarberBookingsScreenState extends State<BarberBookingsScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RouteAware, WidgetsBindingObserver {
   final BarberDashboardService _service =
       BarberDashboardService(ApiClient());
   late TabController _tabController;
   List<BarberBookingModel> _allBookings = [];
   bool _isLoading = true;
   bool _hasError = false;
-  Timer? _timer;
+  Timer? _serviceTimer;
+  StreamSubscription<Map<String, dynamic>>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 5, vsync: this);
     _loadBookings();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
+    _eventSubscription = AppEventBus().stream.listen((event) {
+      if (event['type'] == AppEvents.fcmReceived && mounted) {
+        _loadBookings();
+      }
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    if (mounted) _loadBookings();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadBookings();
+    }
+  }
+
+  @override
   void dispose() {
-    _timer?.cancel();
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
+    _eventSubscription?.cancel();
+    _serviceTimer?.cancel();
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _updateServiceTimer() {
+    final hasInProgress = _allBookings.any((b) => b.status == 'InProgress');
+    if (hasInProgress && _serviceTimer == null) {
+      _serviceTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    } else if (!hasInProgress && _serviceTimer != null) {
+      _serviceTimer?.cancel();
+      _serviceTimer = null;
+    }
   }
 
   Future<void> _loadBookings() async {
@@ -58,6 +98,7 @@ class _BarberBookingsScreenState extends State<BarberBookingsScreen>
           _allBookings = bookings;
           _isLoading = false;
         });
+        _updateServiceTimer();
       }
     } catch (e) {
       if (mounted) {

@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/cache/api_cache.dart';
 
 class ServiceModel {
   final String id;
@@ -269,6 +270,10 @@ class BarbersService {
   BarbersService(this._apiClient);
 
   Future<List<BarberModel>> getAllBarbers({String? city, String? search, double? minRating, String? priceCategory}) async {
+    final cacheKey = 'barbers_list_${city ?? ''}_${search ?? ''}_${minRating ?? ''}_${priceCategory ?? ''}';
+    final cached = ApiCache().get<List<BarberModel>>(cacheKey);
+    if (cached != null) return cached;
+
     final queryParams = <String, dynamic>{};
     if (city != null && city.isNotEmpty) {
       queryParams['city'] = city;
@@ -290,9 +295,11 @@ class BarbersService {
 
     final data = response.data;
     if (data is List) {
-      return data
+      final barbers = data
           .map((e) => BarberModel.fromJson(e as Map<String, dynamic>))
           .toList();
+      ApiCache().set(cacheKey, barbers);
+      return barbers;
     }
     return [];
   }
@@ -308,6 +315,10 @@ class BarbersService {
     required double longitude,
     double radiusKm = 20,
   }) async {
+    final cacheKey = 'barbers_nearby_${latitude}_${longitude}_$radiusKm';
+    final cached = ApiCache().get<List<BarberModel>>(cacheKey);
+    if (cached != null) return cached;
+
     final response = await _apiClient.dio.get(
       '/api/barbers/nearby',
       queryParameters: {
@@ -319,9 +330,11 @@ class BarbersService {
 
     final data = response.data;
     if (data is List) {
-      return data
+      final barbers = data
           .map((e) => BarberModel.fromJson(e as Map<String, dynamic>))
           .toList();
+      ApiCache().set(cacheKey, barbers);
+      return barbers;
     }
     return [];
   }

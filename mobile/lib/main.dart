@@ -10,6 +10,9 @@ import 'core/widgets/pwa_install_banner.dart';
 import 'features/splash/presentation/splash_screen.dart';
 import 'firebase_options.dart';
 
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -45,6 +48,7 @@ class BarberBookingApp extends StatelessWidget {
       themeMode: themeController.themeMode.value,
       locale: const Locale('ar', 'SA'),
       fallbackLocale: const Locale('en', 'US'),
+      navigatorObservers: [routeObserver],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

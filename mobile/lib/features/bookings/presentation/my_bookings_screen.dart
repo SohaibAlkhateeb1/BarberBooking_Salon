@@ -7,8 +7,11 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/time_formatter.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/events/app_event_bus.dart';
+import '../../../core/events/app_events.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/animations/app_animations.dart';
+import '../../../main.dart';
 import '../data/bookings_service.dart';
 import 'booking_details_screen.dart';
 import 'cancel_booking_dialog.dart';
@@ -21,7 +24,7 @@ class MyBookingsScreen extends StatefulWidget {
   State<MyBookingsScreen> createState() => _MyBookingsScreenState();
 }
 
-class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerProviderStateMixin {
+class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerProviderStateMixin, RouteAware, WidgetsBindingObserver {
   final BookingsService _bookingsService = BookingsService(ApiClient());
   late TabController _tabController;
   List<BookingModel> _active = [];
@@ -29,21 +32,44 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
   List<BookingModel> _cancelled = [];
   bool _isLoading = true;
   String? _error;
-  Timer? _refreshTimer;
+  StreamSubscription<Map<String, dynamic>>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 3, vsync: this);
     _loadBookings();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      if (mounted) _loadBookings();
+    _eventSubscription = AppEventBus().stream.listen((event) {
+      if (event['type'] == AppEvents.fcmReceived && mounted) {
+        _loadBookings();
+      }
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    if (mounted) _loadBookings();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadBookings();
+    }
+  }
+
+  @override
   void dispose() {
-    _refreshTimer?.cancel();
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
+    _eventSubscription?.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -56,19 +82,20 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
       });
     }
     try {
-      final results = await Future.wait([
-        _bookingsService.getMyBookings(status: 'Pending'),
-        _bookingsService.getMyBookings(status: 'Accepted'),
-        _bookingsService.getMyBookings(status: 'InProgress'),
-        _bookingsService.getMyBookings(status: 'PaymentPending'),
-        _bookingsService.getMyBookings(status: 'Completed'),
-        _bookingsService.getMyBookings(status: 'Cancelled'),
-      ]);
+      final allBookings = await _bookingsService.getMyBookings();
       if (mounted) {
         setState(() {
-          _active = [...results[0], ...results[1], ...results[2], ...results[3]];
-          _completed = results[4];
-          _cancelled = results[5];
+          _active = allBookings.where((b) =>
+              b.status == 'Pending' ||
+              b.status == 'Accepted' ||
+              b.status == 'InProgress' ||
+              b.status == 'PaymentPending').toList();
+          _completed = allBookings.where((b) => b.status == 'Completed').toList();
+          _cancelled = allBookings.where((b) =>
+              b.status == 'Cancelled' ||
+              b.status == 'Rejected' ||
+              b.status == 'Expired' ||
+              b.status == 'NoShow').toList();
           _isLoading = false;
           _error = null;
         });

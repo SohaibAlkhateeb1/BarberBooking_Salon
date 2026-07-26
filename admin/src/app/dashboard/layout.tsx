@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { LayoutDashboard, Users, Scissors, Calendar, CreditCard, Banknote, LogOut, ClipboardList, Bell } from "lucide-react";
+import { LayoutDashboard, Users, Scissors, Calendar, CreditCard, Banknote, LogOut, ClipboardList, Bell, RefreshCw } from "lucide-react";
 import { getOperationsCounts, OperationsCounts } from "@/lib/api";
 
 const navItems = [
@@ -48,8 +48,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
-    return () => clearInterval(interval);
   }, [fetchNotifications]);
 
   if (!isAuthenticated) {
@@ -81,7 +79,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <h1 className="text-lg font-bold">BarberBooking</h1>
             <p className="text-xs text-muted-foreground">Admin Dashboard</p>
           </div>
-          <div className="relative">
+          <div className="relative flex items-center gap-1">
+            <button
+              onClick={fetchNotifications}
+              className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="size-4 text-muted-foreground" />
+            </button>
             <button
               onClick={() => {
                 router.push("/dashboard/operations");

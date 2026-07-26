@@ -1,4 +1,7 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/cache/api_cache.dart';
+import '../../../core/events/app_event_bus.dart';
+import '../../../core/events/app_events.dart';
 
 class UserProfile {
   final String id;
@@ -117,8 +120,13 @@ class CustomerService {
   CustomerService(this._apiClient);
 
   Future<UserProfile> getProfile() async {
+    final cached = ApiCache().get<UserProfile>('profile');
+    if (cached != null) return cached;
+
     final response = await _apiClient.dio.get('/api/customer/profile');
-    return UserProfile.fromJson(response.data as Map<String, dynamic>);
+    final profile = UserProfile.fromJson(response.data as Map<String, dynamic>);
+    ApiCache().set('profile', profile);
+    return profile;
   }
 
   Future<void> updateProfile({
@@ -140,6 +148,8 @@ class CustomerService {
     if (longitude != null) body['longitude'] = longitude;
 
     await _apiClient.dio.put('/api/customer/profile', data: body);
+    ApiCache().invalidate('profile');
+    AppEventBus().fire(AppEvents.profileUpdated);
   }
 
   Future<String> uploadImage(String base64Image) async {
@@ -150,22 +160,31 @@ class CustomerService {
   }
 
   Future<List<FavoriteModel>> getFavorites() async {
+    final cached = ApiCache().get<List<FavoriteModel>>('favorites');
+    if (cached != null) return cached;
+
     final response = await _apiClient.dio.get('/api/customer/favorites');
     final data = response.data;
     if (data is List) {
-      return data
+      final favorites = data
           .map((e) => FavoriteModel.fromJson(e as Map<String, dynamic>))
           .toList();
+      ApiCache().set('favorites', favorites);
+      return favorites;
     }
     return [];
   }
 
   Future<void> addFavorite(String barberProfileId) async {
     await _apiClient.dio.post('/api/customer/favorites/$barberProfileId');
+    ApiCache().invalidate('favorites');
+    AppEventBus().fire(AppEvents.favoriteChanged);
   }
 
   Future<void> removeFavorite(String barberProfileId) async {
     await _apiClient.dio.delete('/api/customer/favorites/$barberProfileId');
+    ApiCache().invalidate('favorites');
+    AppEventBus().fire(AppEvents.favoriteChanged);
   }
 
   Future<bool> checkFavorite(String barberProfileId) async {

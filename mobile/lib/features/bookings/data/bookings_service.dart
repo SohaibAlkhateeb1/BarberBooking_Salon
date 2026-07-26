@@ -1,4 +1,7 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/cache/api_cache.dart';
+import '../../../core/events/app_event_bus.dart';
+import '../../../core/events/app_events.dart';
 
 class BookingModel {
   final String id;
@@ -185,10 +188,19 @@ class BookingsService {
       },
     );
 
+    ApiCache().invalidate('my_bookings_all');
+    ApiCache().invalidate('dashboard');
+    ApiCache().invalidate('barber_bookings');
+    AppEventBus().fire(AppEvents.bookingCreated);
+
     return BookingDetailModel.fromJson(response.data);
   }
 
   Future<List<BookingModel>> getMyBookings({String? status}) async {
+    final cacheKey = status != null ? 'my_bookings_$status' : 'my_bookings_all';
+    final cached = ApiCache().get<List<BookingModel>>(cacheKey);
+    if (cached != null) return cached;
+
     final response = await _apiClient.dio.get(
       '/api/bookings/my',
       queryParameters: {
@@ -198,7 +210,9 @@ class BookingsService {
 
     final data = response.data;
     if (data is List) {
-      return data.map((e) => BookingModel.fromJson(e)).toList();
+      final bookings = data.map((e) => BookingModel.fromJson(e)).toList();
+      ApiCache().set(cacheKey, bookings);
+      return bookings;
     }
     return [];
   }
@@ -221,6 +235,10 @@ class BookingsService {
       },
     );
 
+    ApiCache().invalidate('my_bookings_all');
+    ApiCache().invalidate('barber_bookings');
+    AppEventBus().fire(AppEvents.bookingRescheduled);
+
     return BookingDetailModel.fromJson(response.data);
   }
 
@@ -234,6 +252,10 @@ class BookingsService {
         if (reason != null) 'reason': reason,
       },
     );
+
+    ApiCache().invalidate('my_bookings_all');
+    ApiCache().invalidate('barber_bookings');
+    AppEventBus().fire(AppEvents.bookingCancelled);
   }
 
   Future<List<AvailableSlotModel>> getAvailableSlots({
@@ -270,5 +292,8 @@ class BookingsService {
         if (comment != null && comment.isNotEmpty) 'comment': comment,
       },
     );
+
+    ApiCache().invalidate('my_bookings_all');
+    AppEventBus().fire(AppEvents.reviewAdded);
   }
 }

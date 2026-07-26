@@ -12,19 +12,26 @@ class PendingApprovalScreen extends StatefulWidget {
   State<PendingApprovalScreen> createState() => _PendingApprovalScreenState();
 }
 
-class _PendingApprovalScreenState extends State<PendingApprovalScreen> {
+class _PendingApprovalScreenState extends State<PendingApprovalScreen> with WidgetsBindingObserver {
   bool _isChecking = false;
-  Timer? _autoCheckTimer;
 
   @override
   void initState() {
     super.initState();
-    _autoCheckTimer = Timer.periodic(const Duration(seconds: 15), (_) => _checkStatus());
+    WidgetsBinding.instance.addObserver(this);
+    _checkStatus();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _checkStatus();
+    }
   }
 
   @override
   void dispose() {
-    _autoCheckTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -38,7 +45,6 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen> {
       final isActive = res.data['isActive'] == true;
 
       if (isActive && mounted) {
-        _autoCheckTimer?.cancel();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('تم تفعيل حسابك بنجاح!'),

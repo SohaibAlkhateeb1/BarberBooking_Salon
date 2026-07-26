@@ -4,6 +4,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import '../network/api_client.dart';
+import '../events/app_event_bus.dart';
+import '../events/app_events.dart';
 import '../../features/main_shell/presentation/main_shell.dart';
 import 'web_notification_helper.dart';
 
@@ -138,6 +140,8 @@ class NotificationService {
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     print('Foreground message: ${message.notification?.title}');
 
+    AppEventBus().fire(AppEvents.fcmReceived, data: message.data);
+
     if (!kIsWeb && message.notification != null) {
       await _showLocalNotification(
         id: message.hashCode,
@@ -150,6 +154,7 @@ class NotificationService {
 
   void _handleBackgroundMessage(RemoteMessage message) {
     print('Background message: ${message.notification?.title}');
+    AppEventBus().fire(AppEvents.fcmReceived, data: message.data);
     _navigateBasedOnData(message.data);
   }
 
@@ -163,6 +168,7 @@ class NotificationService {
   void _onNotificationTapped(NotificationResponse response) {
     if (response.payload != null) {
       final data = jsonDecode(response.payload!);
+      AppEventBus().fire(AppEvents.fcmReceived, data: data);
       _navigateBasedOnData(data);
     }
   }

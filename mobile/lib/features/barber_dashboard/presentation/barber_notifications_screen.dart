@@ -2,8 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/events/app_event_bus.dart';
+import '../../../core/events/app_events.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/animations/app_animations.dart';
+import '../../../main.dart';
 
 class NotificationModel {
   final String id;
@@ -36,24 +39,47 @@ class BarberNotificationsScreen extends StatefulWidget {
   State<BarberNotificationsScreen> createState() => _BarberNotificationsScreenState();
 }
 
-class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> {
+class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> with RouteAware, WidgetsBindingObserver {
   final ApiClient _api = ApiClient();
   List<NotificationModel> _notifications = [];
   bool _isLoading = true;
-  Timer? _refreshTimer;
+  StreamSubscription<Map<String, dynamic>>? _eventSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadNotifications();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) _loadNotifications();
+    _eventSubscription = AppEventBus().stream.listen((event) {
+      if (event['type'] == AppEvents.fcmReceived && mounted) {
+        _loadNotifications();
+      }
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    if (mounted) _loadNotifications();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadNotifications();
+    }
+  }
+
+  @override
   void dispose() {
-    _refreshTimer?.cancel();
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
+    _eventSubscription?.cancel();
     super.dispose();
   }
 
