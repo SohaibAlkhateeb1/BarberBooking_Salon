@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { LayoutDashboard, Users, Scissors, Calendar, CreditCard, Banknote, LogOut, ClipboardList, Bell, RefreshCw } from "lucide-react";
-import { getOperationsCounts, OperationsCounts } from "@/lib/api";
+import { LayoutDashboard, Users, Scissors, Calendar, CreditCard, Banknote, LogOut, ClipboardList, Bell } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -19,14 +18,9 @@ const navItems = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, fullName, logout, token: authToken } = useAuth();
+  const { isAuthenticated, fullName, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [counts, setCounts] = useState<OperationsCounts | null>(null);
-  const [hasNewNotification, setHasNewNotification] = useState(false);
-  const prevCountsRef = useRef<OperationsCounts | null>(null);
-  const tokenRef = useRef(authToken);
-  tokenRef.current = authToken;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -34,55 +28,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [isAuthenticated, router]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchCounts() {
-      if (!tokenRef.current) return;
-      try {
-        const data = await getOperationsCounts(tokenRef.current);
-        if (cancelled) return;
-        prevCountsRef.current = data;
-        setCounts(data);
-      } catch {}
-    }
-    fetchCounts();
-    return () => { cancelled = true; };
-  }, []);
-
-  const refreshNotifications = async () => {
-    if (!tokenRef.current) return;
-    try {
-      const data = await getOperationsCounts(tokenRef.current);
-      const prev = prevCountsRef.current;
-      prevCountsRef.current = data;
-      setCounts(data);
-      if (prev && data.unreadNotifications > prev.unreadNotifications) {
-        setHasNewNotification(true);
-        setTimeout(() => setHasNewNotification(false), 3000);
-      }
-    } catch {}
-  };
-
   if (!isAuthenticated) {
     return null;
   }
-
-  const getBadgeCount = (badgeKey?: string): number => {
-    if (!counts || !badgeKey) return 0;
-    if (badgeKey === "pendingActions") return counts.pendingActions.total;
-    if (badgeKey === "subscriptions") return counts.subscriptions.total;
-    if (badgeKey === "payments") return counts.payments.pending;
-    return 0;
-  };
-
-  const getBadgeColor = (badgeKey?: string): string => {
-    if (!badgeKey) return "bg-red-500";
-    if (badgeKey === "subscriptions") return "bg-amber-500";
-    if (badgeKey === "payments") return "bg-emerald-500";
-    return "bg-red-500";
-  };
-
-  const totalBellCount = (counts?.unreadNotifications ?? 0);
 
   return (
     <div className="flex min-h-screen">
@@ -92,34 +40,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <h1 className="text-lg font-bold">BarberBooking</h1>
             <p className="text-xs text-muted-foreground">Admin Dashboard</p>
           </div>
-          <div className="relative flex items-center gap-1">
-            <button
-              onClick={refreshNotifications}
-              className="relative p-2 rounded-lg hover:bg-muted transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className="size-4 text-muted-foreground" />
-            </button>
-            <button
-              onClick={() => {
-                router.push("/dashboard/operations");
-              }}
-              className="relative p-2 rounded-lg hover:bg-muted transition-colors"
-            >
-              <Bell className={`size-5 transition-colors ${hasNewNotification ? "text-amber-500" : "text-muted-foreground"}`} />
-              {totalBellCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 animate-pulse">
-                  {totalBellCount > 99 ? "99+" : totalBellCount}
-                </span>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={() => router.push("/dashboard/operations")}
+            className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+          >
+            <Bell className="size-5 text-muted-foreground" />
+          </button>
         </div>
         <nav className="flex-1 p-2 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
-            const badgeCount = getBadgeCount(item.badgeKey);
-            const showBadge = badgeCount > 0;
             return (
               <Link
                 key={item.href}
@@ -132,11 +62,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <item.icon className="size-4" />
                 <span className="flex-1">{item.label}</span>
-                {showBadge && (
-                  <span className={`${getBadgeColor(item.badgeKey)} text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center`}>
-                    {badgeCount > 99 ? "99+" : badgeCount}
-                  </span>
-                )}
               </Link>
             );
           })}
