@@ -20,7 +20,9 @@ public class BarbersController : ControllerBase
         [FromQuery] string? city,
         [FromQuery] string? search,
         [FromQuery] double? minRating,
-        [FromQuery] string? priceCategory)
+        [FromQuery] string? priceCategory,
+        [FromQuery] int? pageSize,
+        [FromQuery] int? pageNumber)
     {
         var query = _context.BarberProfiles
             .Include(bp => bp.User)
@@ -64,6 +66,14 @@ public class BarbersController : ControllerBase
             }
         }
 
+        var totalCount = allBarbers.Count;
+
+        if (pageSize.HasValue && pageNumber.HasValue && pageSize.Value > 0)
+        {
+            var skip = (pageNumber.Value - 1) * pageSize.Value;
+            allBarbers = allBarbers.Skip(skip).Take(pageSize.Value).ToList();
+        }
+
         var barbers = allBarbers.Select(bp => new
         {
             id = bp.Id,
@@ -87,6 +97,18 @@ public class BarbersController : ControllerBase
             latitude = bp.Latitude,
             longitude = bp.Longitude
         }).ToList();
+
+        if (pageSize.HasValue && pageNumber.HasValue)
+        {
+            return Ok(new
+            {
+                items = barbers,
+                totalCount = totalCount,
+                pageSize = pageSize.Value,
+                pageNumber = pageNumber.Value,
+                totalPages = (int)Math.Ceiling((double)totalCount / pageSize.Value)
+            });
+        }
 
         return Ok(barbers);
     }

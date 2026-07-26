@@ -269,6 +269,41 @@ class BarbersService {
 
   BarbersService(this._apiClient);
 
+  Future<({List<BarberModel> items, int totalCount, int totalPages})> getAllBarbersPaged({
+    String? city,
+    String? search,
+    double? minRating,
+    String? priceCategory,
+    int pageSize = 10,
+    int pageNumber = 1,
+  }) async {
+    final cacheKey = 'barbers_paged_${city ?? ''}_${search ?? ''}_${minRating ?? ''}_${priceCategory ?? ''}_${pageSize}_$pageNumber';
+    final cached = ApiCache().get<({List<BarberModel> items, int totalCount, int totalPages})>(cacheKey);
+    if (cached != null) return cached;
+
+    final queryParams = <String, dynamic>{
+      'pageSize': pageSize,
+      'pageNumber': pageNumber,
+    };
+    if (city != null && city.isNotEmpty) queryParams['city'] = city;
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
+    if (minRating != null) queryParams['minRating'] = minRating;
+    if (priceCategory != null && priceCategory.isNotEmpty) queryParams['priceCategory'] = priceCategory;
+
+    final response = await _apiClient.dio.get('/api/barbers', queryParameters: queryParams);
+    final data = response.data as Map<String, dynamic>;
+    final items = (data['items'] as List<dynamic>)
+        .map((e) => BarberModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final result = (
+      items: items,
+      totalCount: (data['totalCount'] as num?)?.toInt() ?? 0,
+      totalPages: (data['totalPages'] as num?)?.toInt() ?? 0,
+    );
+    ApiCache().set(cacheKey, result);
+    return result;
+  }
+
   Future<List<BarberModel>> getAllBarbers({String? city, String? search, double? minRating, String? priceCategory}) async {
     final cacheKey = 'barbers_list_${city ?? ''}_${search ?? ''}_${minRating ?? ''}_${priceCategory ?? ''}';
     final cached = ApiCache().get<List<BarberModel>>(cacheKey);

@@ -32,9 +32,13 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
   final BarbersService _barbersService = BarbersService(ApiClient());
   final TokenStorage _tokenStorage = TokenStorage();
   final LocationService _locationService = LocationService();
-  List<BarberModel> _allBarbers = [];
+  List<BarberModel> _featuredBarbers = [];
   List<BarberModel> _nearbyBarbers = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  int _currentPage = 1;
+  int _totalPages = 1;
+  static const int _pageSize = 10;
   String _fullName = '';
   String _city = '';
   bool _hasLocation = false;
@@ -100,20 +104,29 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
         imageUrl = profile.profileImageUrl;
       } catch (_) {}
 
+      setState(() {
+        _currentPage = 1;
+        _nearbyBarbers = [];
+      });
+
       List<BarberModel> barbers;
       if (lat != null && lng != null) {
         try {
           barbers = await _barbersService.getNearbyBarbers(latitude: lat, longitude: lng, radiusKm: 50);
         } catch (_) {
-          barbers = await _barbersService.getAllBarbers();
+          final result = await _barbersService.getAllBarbersPaged(pageSize: _pageSize, pageNumber: 1);
+          _totalPages = result.totalPages;
+          barbers = result.items;
         }
       } else {
-        barbers = await _barbersService.getAllBarbers();
+        final result = await _barbersService.getAllBarbersPaged(pageSize: _pageSize, pageNumber: 1);
+        _totalPages = result.totalPages;
+        barbers = result.items;
       }
 
       if (mounted) {
         setState(() {
-          _allBarbers = barbers;
+          _featuredBarbers = barbers;
           _nearbyBarbers = barbers;
           _fullName = fullName ?? '';
           _city = city ?? '';
@@ -123,6 +136,25 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadMoreBarbers() async {
+    if (_isLoadingMore || _currentPage >= _totalPages) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      final nextPage = _currentPage + 1;
+      final result = await _barbersService.getAllBarbersPaged(pageSize: _pageSize, pageNumber: nextPage);
+      if (mounted) {
+        setState(() {
+          _currentPage = nextPage;
+          _totalPages = result.totalPages;
+          _nearbyBarbers = [..._nearbyBarbers, ...result.items];
+          _isLoadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
@@ -394,13 +426,13 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
         ),
         SizedBox(
           height: 240,
-          child: _allBarbers.isEmpty
+          child: _featuredBarbers.isEmpty
               ? EmptyState(type: EmptyStateType.services, title: 'لا يوجد حلاقون حالياً', subtitle: 'سيظهر هنا أقرب الحلاقين إليك')
               : ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: _allBarbers.length,
-                  itemBuilder: (context, index) => FadeIn(delay: Duration(milliseconds: 100 + index * 80), child: _buildFeaturedCard(_allBarbers[index], isDark)),
+                  itemCount: _featuredBarbers.length,
+                  itemBuilder: (context, index) => FadeIn(delay: Duration(milliseconds: 100 + index * 80), child: _buildFeaturedCard(_featuredBarbers[index], isDark)),
                 ),
         ),
       ],
@@ -526,11 +558,38 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
             actionLabel: 'بحث',
             onAction: () => Get.to(() => const SearchScreen(), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 250)),
           )
-        else
+        else ...[
           ...List.generate(_nearbyBarbers.length, (index) => FadeSlideIn(
             delay: Duration(milliseconds: 350 + index * 80),
             child: _buildNearbyCard(_nearbyBarbers[index], isDark),
           )),
+          if (_isLoadingMore)
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))),
+            ),
+          if (!_isLoadingMore && _currentPage < _totalPages)
+            GestureDetector(
+              onTap: _loadMoreBarbers,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('حمّل المزيد', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_downward, color: AppColors.primary, size: 18),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }

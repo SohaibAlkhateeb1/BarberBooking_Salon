@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../network/platform_url.dart';
 
 class ImageHelper {
@@ -19,6 +20,8 @@ class ImageHelper {
     BorderRadius? borderRadius,
     Widget? placeholder,
     Widget? errorWidget,
+    int? memCacheWidth,
+    int? memCacheHeight,
   }) {
     if (imageUrl == null || imageUrl.isEmpty) {
       return placeholder ?? const SizedBox.shrink();
@@ -41,12 +44,15 @@ class ImageHelper {
       return placeholder ?? const SizedBox.shrink();
     }
 
-    final img = Image.network(
-      fullUrl,
+    final img = CachedNetworkImage(
+      imageUrl: fullUrl,
       width: width,
       height: height,
       fit: fit,
-      errorBuilder: (_, __, ___) => errorWidget ?? placeholder ?? const SizedBox.shrink(),
+      memCacheWidth: memCacheWidth,
+      memCacheHeight: memCacheHeight,
+      placeholder: (_, __) => placeholder ?? const SizedBox.shrink(),
+      errorWidget: (_, __, ___) => errorWidget ?? placeholder ?? const SizedBox.shrink(),
     );
     return borderRadius != null
         ? ClipRRect(borderRadius: borderRadius, child: img)
@@ -65,7 +71,7 @@ class ImageHelper {
     }
 
     final fullUrl = getFullUrl(imageUrl);
-    if (fullUrl != null) return NetworkImage(fullUrl);
+    if (fullUrl != null) return CachedNetworkImageProvider(fullUrl);
     return null;
   }
 }

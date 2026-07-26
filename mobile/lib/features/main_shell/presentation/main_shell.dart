@@ -16,22 +16,25 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   late int _currentIndex = widget.initialTab;
+  final Map<int, Widget> _screenCache = {};
 
-  final List<Widget> _screens = [
-    const _HomeTab(),
-    const SearchScreen(),
-    const MyBookingsScreen(),
-    const AccountScreen(),
-  ];
+  Widget _buildTab(int index) {
+    return _screenCache.putIfAbsent(index, () {
+      switch (index) {
+        case 0: return const HomeScreen();
+        case 1: return const SearchScreen();
+        case 2: return const MyBookingsScreen();
+        case 3: return const AccountScreen();
+        default: return const HomeScreen();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: _buildTab(_currentIndex),
       bottomNavigationBar: FadeIn(
         delay: const Duration(milliseconds: 200),
         child: Container(
@@ -74,14 +77,5 @@ class _MainShellState extends State<MainShell> {
         ),
       ),
     );
-  }
-}
-
-class _HomeTab extends StatelessWidget {
-  const _HomeTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const HomeScreen();
   }
 }
