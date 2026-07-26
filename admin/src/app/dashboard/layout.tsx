@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -24,21 +24,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [counts, setCounts] = useState<OperationsCounts | null>(null);
   const [hasNewNotification, setHasNewNotification] = useState(false);
+  const prevCountsRef = useRef<OperationsCounts | null>(null);
 
   const fetchNotifications = useCallback(async () => {
     if (!authToken) return;
     try {
       const data = await getOperationsCounts(authToken);
-      const prev = counts;
+      const prev = prevCountsRef.current;
+      prevCountsRef.current = data;
       setCounts(data);
 
-      // Flash when new notifications arrive
       if (prev && data.unreadNotifications > prev.unreadNotifications) {
         setHasNewNotification(true);
         setTimeout(() => setHasNewNotification(false), 3000);
       }
     } catch {}
-  }, [authToken, counts]);
+  }, [authToken]);
 
   useEffect(() => {
     if (!isAuthenticated) {
