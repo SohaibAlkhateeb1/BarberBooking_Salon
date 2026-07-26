@@ -112,7 +112,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
       List<BarberModel> barbers;
       if (lat != null && lng != null) {
         try {
-          barbers = await _barbersService.getNearbyBarbers(latitude: lat, longitude: lng, radiusKm: 50);
+          final result = await _barbersService.getNearbyBarbersPaged(
+            latitude: lat, longitude: lng, radiusKm: 50,
+            pageSize: _pageSize, pageNumber: 1,
+          );
+          _totalPages = result.totalPages;
+          barbers = result.items;
         } catch (_) {
           final result = await _barbersService.getAllBarbersPaged(pageSize: _pageSize, pageNumber: 1);
           _totalPages = result.totalPages;
@@ -126,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
 
       if (mounted) {
         setState(() {
-          _featuredBarbers = barbers;
+          _featuredBarbers = barbers.take(5).toList();
           _nearbyBarbers = barbers;
           _fullName = fullName ?? '';
           _city = city ?? '';
@@ -144,7 +149,17 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware, WidgetsBinding
     setState(() => _isLoadingMore = true);
     try {
       final nextPage = _currentPage + 1;
-      final result = await _barbersService.getAllBarbersPaged(pageSize: _pageSize, pageNumber: nextPage);
+      final lat = await _tokenStorage.getLatitude();
+      final lng = await _tokenStorage.getLongitude();
+      dynamic result;
+      if (lat != null && lng != null) {
+        result = await _barbersService.getNearbyBarbersPaged(
+          latitude: lat, longitude: lng, radiusKm: 50,
+          pageSize: _pageSize, pageNumber: nextPage,
+        );
+      } else {
+        result = await _barbersService.getAllBarbersPaged(pageSize: _pageSize, pageNumber: nextPage);
+      }
       if (mounted) {
         setState(() {
           _currentPage = nextPage;

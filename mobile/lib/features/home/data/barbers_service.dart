@@ -373,4 +373,39 @@ class BarbersService {
     }
     return [];
   }
+
+  Future<({List<BarberModel> items, int totalCount, int totalPages})> getNearbyBarbersPaged({
+    required double latitude,
+    required double longitude,
+    double radiusKm = 50,
+    int pageSize = 10,
+    int pageNumber = 1,
+  }) async {
+    final cacheKey = 'barbers_nearby_paged_${latitude}_${longitude}_${radiusKm}_${pageSize}_$pageNumber';
+    final cached = ApiCache().get<({List<BarberModel> items, int totalCount, int totalPages})>(cacheKey);
+    if (cached != null) return cached;
+
+    final response = await _apiClient.dio.get(
+      '/api/barbers/nearby',
+      queryParameters: {
+        'latitude': latitude,
+        'longitude': longitude,
+        'radiusKm': radiusKm,
+        'pageSize': pageSize,
+        'pageNumber': pageNumber,
+      },
+    );
+
+    final data = response.data as Map<String, dynamic>;
+    final items = (data['items'] as List<dynamic>)
+        .map((e) => BarberModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final result = (
+      items: items,
+      totalCount: (data['totalCount'] as num?)?.toInt() ?? 0,
+      totalPages: (data['totalPages'] as num?)?.toInt() ?? 0,
+    );
+    ApiCache().set(cacheKey, result);
+    return result;
+  }
 }

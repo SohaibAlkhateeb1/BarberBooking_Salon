@@ -223,7 +223,9 @@ public class BarbersController : ControllerBase
     public async Task<IActionResult> GetNearby(
         [FromQuery] double latitude,
         [FromQuery] double longitude,
-        [FromQuery] double radiusKm = 20)
+        [FromQuery] double radiusKm = 20,
+        [FromQuery] int? pageSize = null,
+        [FromQuery] int? pageNumber = null)
     {
         var barbers = await _context.BarberProfiles
             .Include(bp => bp.User)
@@ -260,6 +262,26 @@ public class BarbersController : ControllerBase
             .Where(bp => bp.distanceKm <= radiusKm)
             .OrderBy(bp => bp.distanceKm)
             .ToList();
+
+        var totalCount = nearby.Count;
+
+        if (pageSize.HasValue && pageNumber.HasValue && pageSize.Value > 0)
+        {
+            var skip = (pageNumber.Value - 1) * pageSize.Value;
+            nearby = nearby.Skip(skip).Take(pageSize.Value).ToList();
+        }
+
+        if (pageSize.HasValue && pageNumber.HasValue)
+        {
+            return Ok(new
+            {
+                items = nearby,
+                totalCount = totalCount,
+                pageSize = pageSize.Value,
+                pageNumber = pageNumber.Value,
+                totalPages = (int)Math.Ceiling((double)totalCount / pageSize.Value)
+            });
+        }
 
         return Ok(nearby);
     }
