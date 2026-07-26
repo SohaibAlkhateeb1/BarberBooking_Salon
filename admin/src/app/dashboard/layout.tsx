@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -25,21 +25,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [counts, setCounts] = useState<OperationsCounts | null>(null);
   const [hasNewNotification, setHasNewNotification] = useState(false);
   const prevCountsRef = useRef<OperationsCounts | null>(null);
-
-  const fetchNotifications = useCallback(async () => {
-    if (!authToken) return;
-    try {
-      const data = await getOperationsCounts(authToken);
-      const prev = prevCountsRef.current;
-      prevCountsRef.current = data;
-      setCounts(data);
-
-      if (prev && data.unreadNotifications > prev.unreadNotifications) {
-        setHasNewNotification(true);
-        setTimeout(() => setHasNewNotification(false), 3000);
-      }
-    } catch {}
-  }, [authToken]);
+  const tokenRef = useRef(authToken);
+  tokenRef.current = authToken;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -48,8 +35,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+    let cancelled = false;
+    async function fetchCounts() {
+      if (!tokenRef.current) return;
+      try {
+        const data = await getOperationsCounts(tokenRef.current);
+        if (cancelled) return;
+        prevCountsRef.current = data;
+        setCounts(data);
+      } catch {}
+    }
+    fetchCounts();
+    return () => { cancelled = true; };
+  }, []);
+
+  const refreshNotifications = async () => {
+    if (!tokenRef.current) return;
+    try {
+      const data = await getOperationsCounts(tokenRef.current);
+      const prev = prevCountsRef.current;
+      prevCountsRef.current = data;
+      setCounts(data);
+      if (prev && data.unreadNotifications > prev.unreadNotifications) {
+        setHasNewNotification(true);
+        setTimeout(() => setHasNewNotification(false), 3000);
+      }
+    } catch {}
+  };
 
   if (!isAuthenticated) {
     return null;
@@ -82,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="relative flex items-center gap-1">
             <button
-              onClick={fetchNotifications}
+              onClick={refreshNotifications}
               className="relative p-2 rounded-lg hover:bg-muted transition-colors"
               title="Refresh"
             >
