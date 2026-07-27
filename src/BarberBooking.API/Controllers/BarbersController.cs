@@ -177,7 +177,16 @@ public class BarbersController : ControllerBase
                     id = e.Id,
                     name = e.Name,
                     phoneNumber = e.PhoneNumber,
-                    profileImageUrl = e.ProfileImageUrl
+                    profileImageUrl = e.ProfileImageUrl,
+                    schedule = _context.EmployeeSchedules
+                        .Where(s => s.EmployeeId == e.Id)
+                        .Select(s => new
+                        {
+                            dayName = s.DayName,
+                            isOpen = s.IsOpen,
+                            openTime = s.OpenTime.ToString(@"hh\:mm"),
+                            closeTime = s.CloseTime.ToString(@"hh\:mm")
+                        }).ToList()
                 }).ToList(),
             latitude = barber.Latitude,
             longitude = barber.Longitude

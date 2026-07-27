@@ -163,12 +163,14 @@ class EmployeeModel {
   final String name;
   final String phoneNumber;
   final String? profileImageUrl;
+  final List<WorkingHourModel> schedule;
 
   EmployeeModel({
     required this.id,
     required this.name,
     required this.phoneNumber,
     this.profileImageUrl,
+    this.schedule = const [],
   });
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
@@ -177,6 +179,10 @@ class EmployeeModel {
       name: json['name'] ?? '',
       phoneNumber: json['phoneNumber'] ?? '',
       profileImageUrl: json['profileImageUrl'],
+      schedule: (json['schedule'] as List<dynamic>?)
+              ?.map((e) => WorkingHourModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 }

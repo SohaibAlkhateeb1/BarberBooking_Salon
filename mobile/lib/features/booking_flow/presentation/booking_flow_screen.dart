@@ -100,7 +100,19 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       case 0: currentStep = SelectBarberStep(barberDetail: _barberDetail!, onNext: _nextStep); break;
       case 1: currentStep = SelectEmployeeStep(employees: _barberDetail!.employees, selectedEmployeeId: _selectedEmployeeId, onEmployeeSelected: (id, name) { setState(() { _selectedEmployeeId = id; _selectedEmployeeName = name; _selectedServiceIds.clear(); }); }, onNext: _nextStep); break;
       case 2: currentStep = SelectServiceStep(barberProfileId: widget.barberProfileId, employeeId: _selectedEmployeeId, selectedServiceIds: _selectedServiceIds, onServiceToggled: _onServiceToggled, onNext: _nextStep); break;
-      case 3: currentStep = SelectDateStep(selectedDate: _selectedDate, onDateSelected: _onDateSelected, onNext: _nextStep, workingHours: _barberDetail!.workingHours); break;
+      case 3:
+        List<WorkingHourModel> dateSchedule;
+        if (_selectedEmployeeId != null) {
+          final selectedEmployee = _barberDetail!.employees.firstWhere(
+            (e) => e.id == _selectedEmployeeId,
+            orElse: () => _barberDetail!.employees.first,
+          );
+          dateSchedule = selectedEmployee.schedule.isNotEmpty ? selectedEmployee.schedule : _barberDetail!.workingHours;
+        } else {
+          dateSchedule = _barberDetail!.workingHours;
+        }
+        currentStep = SelectDateStep(selectedDate: _selectedDate, onDateSelected: _onDateSelected, onNext: _nextStep, workingHours: dateSchedule);
+        break;
       case 4: currentStep = SelectTimeStep(barberProfileId: widget.barberProfileId, employeeId: _selectedEmployeeId, selectedDate: _selectedDate!, selectedTime: _selectedTime, durationInMinutes: _totalDurationMinutes, onTimeSelected: _onTimeSelected, onNext: _nextStep); break;
       case 5:
         final selectedServices = _barberDetail!.services.where((s) => _selectedServiceIds.contains(s.id)).toList();
