@@ -18,13 +18,19 @@ class BarberMainShell extends StatefulWidget {
 
 class _BarberMainShellState extends State<BarberMainShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
+  final Map<int, Widget> _screenCache = {};
 
-  final List<Widget> _screens = const [
-    BarberDashboardScreen(),
-    BarberBookingsScreen(),
-    BarberServicesScreen(),
-    BarberAccountScreen(),
-  ];
+  Widget _buildTab(int index) {
+    return _screenCache.putIfAbsent(index, () {
+      switch (index) {
+        case 0: return const BarberDashboardScreen();
+        case 1: return const BarberBookingsScreen();
+        case 2: return const BarberServicesScreen();
+        case 3: return const BarberAccountScreen();
+        default: return const BarberDashboardScreen();
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -67,10 +73,7 @@ class _BarberMainShellState extends State<BarberMainShell> with WidgetsBindingOb
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: _buildTab(_currentIndex),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.lightSurface,

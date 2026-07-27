@@ -44,6 +44,7 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> w
   List<NotificationModel> _notifications = [];
   bool _isLoading = true;
   bool _hasLoadedOnce = false;
+  bool _isLoadingNotifications = false;
   StreamSubscription<Map<String, dynamic>>? _eventSubscription;
 
   @override
@@ -85,6 +86,8 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> w
   }
 
   Future<void> _loadNotifications() async {
+    if (_isLoadingNotifications) return;
+    _isLoadingNotifications = true;
     if (_notifications.isEmpty) {
       setState(() => _isLoading = true);
     }
@@ -103,6 +106,8 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> w
       }
     } catch (e) {
       setState(() { _isLoading = false; _hasLoadedOnce = true; });
+    } finally {
+      _isLoadingNotifications = false;
     }
   }
 

@@ -5,13 +5,33 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/animations/app_animations.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../home/data/barbers_service.dart';
 
 class SelectDateStep extends StatelessWidget {
   final DateTime? selectedDate;
   final ValueChanged<DateTime> onDateSelected;
   final VoidCallback onNext;
+  final List<WorkingHourModel> workingHours;
 
-  const SelectDateStep({super.key, required this.selectedDate, required this.onDateSelected, required this.onNext});
+  const SelectDateStep({super.key, required this.selectedDate, required this.onDateSelected, required this.onNext, this.workingHours = const []});
+
+  bool _isDayOpen(DateTime date) {
+    if (workingHours.isEmpty) return true;
+    final dayNames = {
+      1: 'الاثنين',
+      2: 'الثلاثاء',
+      3: 'الأربعاء',
+      4: 'الخميس',
+      5: 'الجمعة',
+      6: 'السبت',
+      7: 'الأحد',
+    };
+    final dayName = dayNames[date.weekday];
+    if (dayName == null) return true;
+    final wh = workingHours.where((w) => w.dayName == dayName);
+    if (wh.isEmpty) return true;
+    return wh.any((w) => w.isOpen);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,28 +100,59 @@ class SelectDateStep extends StatelessWidget {
         itemCount: dates.length,
         itemBuilder: (_, index) {
           final date = dates[index];
+          final isDayOpen = _isDayOpen(date);
           final isSelected = selectedDate != null && selectedDate!.year == date.year && selectedDate!.month == date.month && selectedDate!.day == date.day;
           final dayName = DateFormat('EEE', 'ar').format(date);
           final monthName = DateFormat('MMM', 'ar').format(date);
 
           return GestureDetector(
-            onTap: () { HapticFeedback.lightImpact(); onDateSelected(date); },
+            onTap: isDayOpen ? () { HapticFeedback.lightImpact(); onDateSelected(date); } : null,
             child: Container(
               width: 70,
               margin: const EdgeInsets.only(right: 10),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : context.surfaceColor,
+                color: isSelected
+                    ? AppColors.primary
+                    : isDayOpen
+                        ? context.surfaceColor
+                        : (isDark ? AppColors.darkSurface : AppColors.lightSurface).withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                border: Border.all(color: isSelected ? AppColors.primary : context.cardBorderColor, width: isSelected ? 2 : 1),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : isDayOpen
+                          ? context.cardBorderColor
+                          : context.cardBorderColor.withValues(alpha: 0.3),
+                  width: isSelected ? 2 : 1,
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(dayName, style: TextStyle(color: isSelected ? context.backgroundColor : context.hintColor, fontSize: 12)),
+                  Text(dayName, style: TextStyle(
+                    color: isSelected ? context.backgroundColor : isDayOpen ? context.hintColor : context.hintColor.withValues(alpha: 0.5),
+                    fontSize: 12,
+                  )),
                   const SizedBox(height: 4),
-                  Text('${date.day}', style: TextStyle(color: isSelected ? context.backgroundColor : context.textColor, fontSize: 22, fontWeight: FontWeight.bold)),
+                  Text('${date.day}', style: TextStyle(
+                    color: isSelected ? context.backgroundColor : isDayOpen ? context.textColor : context.hintColor.withValues(alpha: 0.5),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    decoration: isDayOpen ? null : TextDecoration.lineThrough,
+                    decorationColor: AppColors.error.withValues(alpha: 0.6),
+                  )),
                   const SizedBox(height: 2),
-                  Text(monthName, style: TextStyle(color: isSelected ? context.backgroundColor : context.hintColor, fontSize: 12)),
+                  if (!isDayOpen)
+                    Text('مغلق', style: TextStyle(
+                      color: AppColors.error.withValues(alpha: 0.8),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ))
+                  else
+                    Text(monthName, style: TextStyle(
+                      color: isSelected ? context.backgroundColor : context.hintColor,
+                      fontSize: 12,
+                    )),
                 ],
               ),
             ),

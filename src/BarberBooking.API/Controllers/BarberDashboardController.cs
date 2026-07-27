@@ -717,10 +717,10 @@ public class BarberDashboardController : ControllerBase
         var dayNameArabic = date.DayOfWeek switch
         {
             DayOfWeek.Saturday => "السبت",
-            DayOfWeek.Sunday => "الاحد",
+            DayOfWeek.Sunday => "الأحد",
             DayOfWeek.Monday => "الاثنين",
             DayOfWeek.Tuesday => "الثلاثاء",
-            DayOfWeek.Wednesday => "الاربعاء",
+            DayOfWeek.Wednesday => "الأربعاء",
             DayOfWeek.Thursday => "الخميس",
             DayOfWeek.Friday => "الجمعة",
             _ => ""
@@ -1028,17 +1028,15 @@ public class BarberDashboardController : ControllerBase
             .Where(wh => wh.BarberProfileId == profile.Id)
             .ToListAsync();
 
-        var defaultDays = new[] { "السبت", "الاحد", "الاثنين", "الثلاثاء", "الاربعاء", "الخميس", "الجمعة" };
-        foreach (var day in defaultDays)
+        foreach (var shopDay in shopHours)
         {
-            var shopDay = shopHours.FirstOrDefault(wh => wh.DayName == day);
             _context.EmployeeSchedules.Add(new EmployeeSchedule
             {
                 EmployeeId = employee.Id,
-                DayName = day,
-                IsOpen = shopDay?.IsOpen ?? false,
-                OpenTime = shopDay?.OpenTime ?? TimeSpan.FromHours(9),
-                CloseTime = shopDay?.CloseTime ?? TimeSpan.FromHours(17),
+                DayName = shopDay.DayName,
+                IsOpen = shopDay.IsOpen,
+                OpenTime = shopDay.OpenTime,
+                CloseTime = shopDay.CloseTime,
             });
         }
         await _context.SaveChangesAsync();
