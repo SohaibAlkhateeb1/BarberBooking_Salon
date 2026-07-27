@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -88,6 +89,14 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
   void _proceedToBooking() {
     HapticFeedback.lightImpact();
     Get.to(() => BookingFlowScreen(barberProfileId: widget.barberId, selectedServiceIds: _barberDetail!.services.map((s) => s.id).toList()), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 250));
+  }
+
+  static String _getTileUrl(double lat, double lng, {int zoom = 13}) {
+    final n = 1 << zoom;
+    final x = ((lng + 180.0) / 360.0 * n).floor();
+    final latRad = lat * math.pi / 180.0;
+    final y = ((1.0 - math.log(math.tan(latRad) + 1.0 / math.cos(latRad)) / math.pi) / 2.0 * n).floor();
+    return 'https://tile.openstreetmap.org/$zoom/$x/$y.png';
   }
 
   @override
@@ -468,47 +477,30 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
                       final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=${barber.latitude},${barber.longitude}');
                       if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication);
                     },
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primary.withValues(alpha: 0.08),
-                            AppColors.primary.withValues(alpha: 0.02),
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.location_pin, color: AppColors.primary, size: 36),
-                          ),
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: context.surfaceColor.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(AppBorderRadius.sm),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: _getTileUrl(barber.latitude!, barber.longitude!),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          memCacheWidth: 600,
+                          placeholder: (_, __) => Container(color: context.surfaceColor, child: const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))),
+                          errorWidget: (_, __, ___) => Container(
+                            color: context.surfaceColor,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.open_in_new, color: AppColors.primary, size: 14),
-                                const SizedBox(width: 6),
+                                Icon(Icons.location_pin, color: AppColors.primary, size: 36),
+                                const SizedBox(height: 8),
                                 Text('افتح على الخريطة', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
                               ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        const Icon(Icons.location_pin, color: AppColors.primary, size: 40),
+                      ],
                     ),
                   )
                 : Stack(children: [Center(child: Icon(Icons.map_outlined, color: AppColors.primary.withValues(alpha: 0.4), size: 50))]),
