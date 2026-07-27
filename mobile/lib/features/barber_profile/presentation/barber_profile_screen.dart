@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -462,25 +463,53 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
             decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(AppBorderRadius.md), border: Border.all(color: context.cardBorderColor)),
             clipBehavior: Clip.antiAlias,
             child: hasCoordinates
-                ? Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CachedNetworkImage(
-                        imageUrl: 'https://staticmap.openstreetmap.de/staticmap.php?center=${barber.latitude!},${barber.longitude!}&zoom=15&size=600x300&maptype=mapnik&markers=${barber.latitude!},${barber.longitude!},red-pushpin',
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        placeholder: (_, __) => Container(
-                          color: context.surfaceColor,
-                          child: const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
-                        ),
-                        errorWidget: (_, __, ___) => Container(
-                          color: context.surfaceColor,
-                          child: Icon(Icons.map_outlined, color: AppColors.primary.withValues(alpha: 0.4), size: 50),
+                ? GestureDetector(
+                    onTap: () async {
+                      final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=${barber.latitude},${barber.longitude}');
+                      if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.08),
+                            AppColors.primary.withValues(alpha: 0.02),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
                         ),
                       ),
-                      const Icon(Icons.location_pin, color: AppColors.primary, size: 40),
-                    ],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.location_pin, color: AppColors.primary, size: 36),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: context.surfaceColor.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.open_in_new, color: AppColors.primary, size: 14),
+                                const SizedBox(width: 6),
+                                Text('افتح على الخريطة', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   )
                 : Stack(children: [Center(child: Icon(Icons.map_outlined, color: AppColors.primary.withValues(alpha: 0.4), size: 50))]),
           ),
