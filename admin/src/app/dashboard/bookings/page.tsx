@@ -32,12 +32,11 @@ export default function BookingsPage() {
 
   useEffect(() => {
     setPage(1);
-    loadBookings(1);
-  }, [token, statusFilter]);
+  }, [statusFilter]);
 
   useEffect(() => {
     loadBookings(page);
-  }, [page]);
+  }, [token, statusFilter, page]);
 
   const totalPages = Math.ceil(totalCount / 20);
 
