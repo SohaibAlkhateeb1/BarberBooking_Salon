@@ -1,8 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart' as latlong2;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -463,22 +462,24 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
             decoration: BoxDecoration(color: context.surfaceColor, borderRadius: BorderRadius.circular(AppBorderRadius.md), border: Border.all(color: context.cardBorderColor)),
             clipBehavior: Clip.antiAlias,
             child: hasCoordinates
-                ? FlutterMap(
-                    options: MapOptions(
-                      initialCenter: latlong2.LatLng(barber.latitude!, barber.longitude!),
-                      initialZoom: 12,
-                      maxZoom: 12,
-                      minZoom: 12,
-                      interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
-                    ),
+                ? Stack(
+                    alignment: Alignment.center,
                     children: [
-                      TileLayer(
-                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.barberbooking.app',
-                        tileSize: 256,
-                        maxZoom: 12,
+                      CachedNetworkImage(
+                        imageUrl: 'https://staticmap.openstreetmap.de/staticmap.php?center=${barber.latitude!},${barber.longitude!}&zoom=15&size=600x300&maptype=mapnik&markers=${barber.latitude!},${barber.longitude!},red-pushpin',
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        placeholder: (_, __) => Container(
+                          color: context.surfaceColor,
+                          child: const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          color: context.surfaceColor,
+                          child: Icon(Icons.map_outlined, color: AppColors.primary.withValues(alpha: 0.4), size: 50),
+                        ),
                       ),
-                      MarkerLayer(markers: [Marker(point: latlong2.LatLng(barber.latitude!, barber.longitude!), width: 40, height: 40, child: const Icon(Icons.location_pin, color: AppColors.primary, size: 40))]),
+                      const Icon(Icons.location_pin, color: AppColors.primary, size: 40),
                     ],
                   )
                 : Stack(children: [Center(child: Icon(Icons.map_outlined, color: AppColors.primary.withValues(alpha: 0.4), size: 50))]),
