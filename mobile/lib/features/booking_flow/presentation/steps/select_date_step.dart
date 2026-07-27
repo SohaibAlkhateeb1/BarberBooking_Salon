@@ -28,9 +28,17 @@ class SelectDateStep extends StatelessWidget {
     };
     final dayName = dayNames[date.weekday];
     if (dayName == null) return true;
-    final wh = workingHours.where((w) => w.dayName == dayName);
+    final normalizedTarget = _normalizeArabic(dayName);
+    final wh = workingHours.where((w) => _normalizeArabic(w.dayName) == normalizedTarget);
     if (wh.isEmpty) return true;
     return wh.any((w) => w.isOpen);
+  }
+
+  String _normalizeArabic(String text) {
+    return text
+        .replaceAll('أ', 'ا').replaceAll('إ', 'ا').replaceAll('آ', 'ا')
+        .replaceAll('ؤ', 'و').replaceAll('ئ', 'ي').replaceAll('ة', 'ه')
+        .replaceAll('ى', 'ي');
   }
 
   @override

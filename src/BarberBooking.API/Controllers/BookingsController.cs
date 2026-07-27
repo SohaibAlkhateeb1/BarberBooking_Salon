@@ -448,6 +448,7 @@ public class BookingsController : ControllerBase
 
         // Collect bookable persons
         var persons = new List<(Guid id, string name, bool isOwner)>();
+        var empScheduleMap = new Dictionary<Guid, EmployeeSchedule>();
 
         // Owner (BarberProfile.UserId) — check shop's working hours
         var shopWorkingHour = barber.WorkingHours
@@ -467,9 +468,12 @@ public class BookingsController : ControllerBase
             foreach (var emp in employees)
             {
                 var empSchedule = emp.Schedules
-                    .FirstOrDefault(s => s.DayName == dayNameArabic && s.IsOpen);
+                    .FirstOrDefault(s => NormalizeArabic(s.DayName) == NormalizeArabic(dayNameArabic) && s.IsOpen);
                 if (empSchedule != null)
+                {
                     persons.Add((emp.Id, emp.Name, false));
+                    empScheduleMap[emp.Id] = empSchedule;
+                }
             }
         }
         else
@@ -489,9 +493,12 @@ public class BookingsController : ControllerBase
                 if (emp != null)
                 {
                     var empSchedule = emp.Schedules
-                        .FirstOrDefault(s => s.DayName == dayNameArabic && s.IsOpen);
+                        .FirstOrDefault(s => NormalizeArabic(s.DayName) == NormalizeArabic(dayNameArabic) && s.IsOpen);
                     if (empSchedule != null)
+                    {
                         persons.Add((emp.Id, emp.Name, false));
+                        empScheduleMap[emp.Id] = empSchedule;
+                    }
                 }
             }
         }
@@ -534,20 +541,15 @@ public class BookingsController : ControllerBase
         var earliestOpen = persons.Min(p =>
         {
             if (p.isOwner) return shopWorkingHour!.OpenTime;
-            var emp = persons.FirstOrDefault(x => x.id == p.id);
-            return _context.EmployeeSchedules
-                .Where(s => s.EmployeeId == p.id && s.DayName == dayNameArabic)
-                .Select(s => s.OpenTime)
-                .FirstOrDefault();
+            if (empScheduleMap.TryGetValue(p.id, out var sched)) return sched.OpenTime;
+            return TimeSpan.Zero;
         });
 
         var latestClose = persons.Max(p =>
         {
             if (p.isOwner) return shopWorkingHour!.CloseTime;
-            return _context.EmployeeSchedules
-                .Where(s => s.EmployeeId == p.id && s.DayName == dayNameArabic)
-                .Select(s => s.CloseTime)
-                .FirstOrDefault();
+            if (empScheduleMap.TryGetValue(p.id, out var sched)) return sched.CloseTime;
+            return TimeSpan.Zero;
         });
 
         var slots = new List<object>();
@@ -568,11 +570,7 @@ public class BookingsController : ControllerBase
                 }
                 else
                 {
-                    var sched = await _context.EmployeeSchedules
-                        .Where(s => s.EmployeeId == person.id && s.DayName == dayNameArabic)
-                        .Select(s => new { s.OpenTime, s.CloseTime })
-                        .FirstOrDefaultAsync();
-                    if (sched == null) continue;
+                    if (!empScheduleMap.TryGetValue(person.id, out var sched)) continue;
                     personOpen = sched.OpenTime;
                     personClose = sched.CloseTime;
                 }
@@ -610,6 +608,14 @@ public class BookingsController : ControllerBase
         }
 
         return Ok(new { slots });
+    }
+
+    private static string NormalizeArabic(string text)
+    {
+        return text
+            .Replace('أ', 'ا').Replace('إ', 'ا').Replace('آ', 'ا')
+            .Replace('ؤ', 'و').Replace('ئ', 'ي').Replace('ة', 'ه')
+            .Replace('ى', 'ي');
     }
 
     private static string FormatTime12(TimeSpan time)
