@@ -333,20 +333,38 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
     final currentHour = now.hour;
     final currentMinute = now.minute;
 
-    List<String> timeSlots = [];
-    final workingHours = barber.workingHours.where((w) => w.isOpen).toList();
-    for (var wh in workingHours) {
-      final open = _parseTime(wh.openTime);
-      final close = _parseTime(wh.closeTime);
-      for (var h = open; h < close; h++) {
-        timeSlots.add('${h.toString().padLeft(2, '0')}:00');
-        timeSlots.add('${h.toString().padLeft(2, '0')}:30');
-      }
-    }
-    timeSlots = timeSlots.toSet().toList()..sort();
+    final dayNames = {
+      1: 'الاثنين', 2: 'الثلاثاء', 3: 'الأربعاء', 4: 'الخميس',
+      5: 'الجمعة', 6: 'السبت', 7: 'الأحد',
+    };
+    final todayName = dayNames[now.weekday] ?? '';
 
-    if (timeSlots.isEmpty) {
-      timeSlots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'];
+    String normalize(String text) => text
+        .replaceAll('أ', 'ا').replaceAll('إ', 'ا').replaceAll('آ', 'ا')
+        .replaceAll('ؤ', 'و').replaceAll('ئ', 'ي').replaceAll('ة', 'ه')
+        .replaceAll('ى', 'ي');
+    final normalizedToday = normalize(todayName);
+
+    List<String> timeSlots = [];
+
+    if (!_slotsLoading && _availableSlots.isNotEmpty) {
+      timeSlots = _availableSlots.map((s) => s.time).toSet().toList();
+      timeSlots.sort();
+    } else if (_slotsLoading) {
+      // still loading
+    } else {
+      final todayShopHours = barber.workingHours
+          .where((w) => w.isOpen && normalize(w.dayName) == normalizedToday)
+          .toList();
+      for (var wh in todayShopHours) {
+        final open = _parseTime(wh.openTime);
+        final close = _parseTime(wh.closeTime);
+        for (var h = open; h < close; h++) {
+          timeSlots.add('${h.toString().padLeft(2, '0')}:00');
+          timeSlots.add('${h.toString().padLeft(2, '0')}:30');
+        }
+      }
+      timeSlots = timeSlots.toSet().toList()..sort();
     }
 
     final pastSlots = timeSlots.where((slot) {
