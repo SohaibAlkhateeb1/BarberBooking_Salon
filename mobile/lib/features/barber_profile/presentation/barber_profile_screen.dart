@@ -464,9 +464,20 @@ class _BarberProfileScreenState extends State<BarberProfileScreen> {
             clipBehavior: Clip.antiAlias,
             child: hasCoordinates
                 ? FlutterMap(
-                    options: MapOptions(initialCenter: latlong2.LatLng(barber.latitude!, barber.longitude!), initialZoom: 15, interactionOptions: const InteractionOptions(flags: InteractiveFlag.none)),
+                    options: MapOptions(
+                      initialCenter: latlong2.LatLng(barber.latitude!, barber.longitude!),
+                      initialZoom: 12,
+                      maxZoom: 12,
+                      minZoom: 12,
+                      interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+                    ),
                     children: [
-                      TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.barberbooking.app'),
+                      TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.barberbooking.app',
+                        tileSize: 256,
+                        maxZoom: 12,
+                      ),
                       MarkerLayer(markers: [Marker(point: latlong2.LatLng(barber.latitude!, barber.longitude!), width: 40, height: 40, child: const Icon(Icons.location_pin, color: AppColors.primary, size: 40))]),
                     ],
                   )
