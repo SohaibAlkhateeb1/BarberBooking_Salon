@@ -74,7 +74,7 @@ public class BookingReminderService : BackgroundService
                 // --- Customer reminder ---
                 var customerAlreadyReminded = await context.Notifications
                     .AnyAsync(n => n.UserId == booking.CustomerId
-                        && (n.Type == "reminder" || n.Type == "service_reminder")
+                        && (n.Type == "reminder" || n.Type == "service_reminder" || n.Type == "booking")
                         && n.Data == booking.Id.ToString());
 
                 if (!customerAlreadyReminded)
@@ -113,7 +113,7 @@ public class BookingReminderService : BackgroundService
                 // --- Barber reminder ---
                 var barberAlreadyReminded = await context.Notifications
                     .AnyAsync(n => n.UserId == booking.BarberProfile.UserId
-                        && (n.Type == "reminder" || n.Type == "service_reminder")
+                        && (n.Type == "reminder" || n.Type == "service_reminder" || n.Type == "booking_accepted")
                         && n.Data == booking.Id.ToString());
 
                 if (!barberAlreadyReminded)

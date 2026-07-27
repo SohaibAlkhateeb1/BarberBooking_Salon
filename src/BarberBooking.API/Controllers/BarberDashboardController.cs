@@ -218,7 +218,7 @@ public class BarberDashboardController : ControllerBase
         {
             UserId = booking.CustomerId,
             Title = "تم تأكيد الموعد",
-            Message = $"تم تأكيد موعدك — {booking.BarberService.Name} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {booking.BookingTime:hh\\:mm}",
+            Message = $"تم تأكيد موعدك — {booking.BarberService.Name} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {FormatTime12(booking.BookingTime)}",
             Type = "booking",
             IsRead = false,
             Data = booking.Id.ToString()
@@ -229,7 +229,7 @@ public class BarberDashboardController : ControllerBase
         await _fcm.SendToUser(
             booking.CustomerId,
             "تم تأكيد موعدك ",
-            $"تم تأكيد موعدك — {booking.BarberService.Name} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {booking.BookingTime:hh\\:mm}",
+            $"تم تأكيد موعدك — {booking.BarberService.Name} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {FormatTime12(booking.BookingTime)}",
             new Dictionary<string, string>
             {
                 { "type", "booking_update" },
@@ -1365,6 +1365,14 @@ public class BarberDashboardController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    private static string FormatTime12(TimeSpan time)
+    {
+        var hours12 = time.Hours % 12;
+        if (hours12 == 0) hours12 = 12;
+        var period = time.Hours < 12 ? "صباحاً" : "مساءً";
+        return $"{hours12}:{time.Minutes:D2} {period}";
     }
 }
 

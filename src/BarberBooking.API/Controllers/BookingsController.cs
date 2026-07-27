@@ -347,7 +347,7 @@ public class BookingsController : ControllerBase
         {
             UserId = booking.BarberProfile.UserId,
             Title = "تم إلغاء الحجز",
-            Message = $"قام {customer?.FullName ?? "زبون"} بإلغاء حجز {serviceName} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {booking.BookingTime:hh\\:mm}{(dto.Reason != null ? $" - السبب: {dto.Reason}" : "")}",
+            Message = $"قام {customer?.FullName ?? "زبون"} بإلغاء حجز {serviceName} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {FormatTime12(booking.BookingTime)}{(dto.Reason != null ? $" - السبب: {dto.Reason}" : "")}",
             Type = "cancellation",
             IsRead = false,
             Data = booking.Id.ToString()
@@ -369,7 +369,7 @@ public class BookingsController : ControllerBase
         await _fcm.SendToBarber(
             booking.BarberProfile.UserId,
             "تم إلغاء حجز ❌",
-            $"قام {customer?.FullName ?? "زبون"} بإلغاء حجز {serviceName} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {booking.BookingTime:hh\\:mm}",
+            $"قام {customer?.FullName ?? "زبون"} بإلغاء حجز {serviceName} يوم {booking.BookingDate:yyyy-MM-dd} الساعة {FormatTime12(booking.BookingTime)}",
             new Dictionary<string, string>
             {
                 { "type", "booking_update" },
@@ -610,5 +610,13 @@ public class BookingsController : ControllerBase
         }
 
         return Ok(new { slots });
+    }
+
+    private static string FormatTime12(TimeSpan time)
+    {
+        var hours12 = time.Hours % 12;
+        if (hours12 == 0) hours12 = 12;
+        var period = time.Hours < 12 ? "صباحاً" : "مساءً";
+        return $"{hours12}:{time.Minutes:D2} {period}";
     }
 }

@@ -43,6 +43,7 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> w
   final ApiClient _api = ApiClient();
   List<NotificationModel> _notifications = [];
   bool _isLoading = true;
+  bool _hasLoadedOnce = false;
   StreamSubscription<Map<String, dynamic>>? _eventSubscription;
 
   @override
@@ -65,12 +66,12 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> w
 
   @override
   void didPopNext() {
-    if (mounted) _loadNotifications();
+    if (mounted && _hasLoadedOnce) _loadNotifications();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && mounted) {
+    if (state == AppLifecycleState.resumed && mounted && _hasLoadedOnce) {
       _loadNotifications();
     }
   }
@@ -95,12 +96,13 @@ class _BarberNotificationsScreenState extends State<BarberNotificationsScreen> w
         setState(() {
           _notifications = list.map((e) => NotificationModel.fromJson(e)).toList();
           _isLoading = false;
+          _hasLoadedOnce = true;
         });
       } else {
-        setState(() => _isLoading = false);
+        setState(() { _isLoading = false; _hasLoadedOnce = true; });
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      setState(() { _isLoading = false; _hasLoadedOnce = true; });
     }
   }
 
