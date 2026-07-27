@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/session/session_manager.dart';
+import '../../../core/storage/token_storage.dart';
+import '../../role_selection/presentation/role_selection_screen.dart';
 import 'barber_dashboard_screen.dart';
 import 'barber_bookings_screen.dart';
 import 'barber_services_screen.dart';
@@ -12,7 +16,7 @@ class BarberMainShell extends StatefulWidget {
   State<BarberMainShell> createState() => _BarberMainShellState();
 }
 
-class _BarberMainShellState extends State<BarberMainShell> {
+class _BarberMainShellState extends State<BarberMainShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
@@ -21,6 +25,43 @@ class _BarberMainShellState extends State<BarberMainShell> {
     BarberServicesScreen(),
     BarberAccountScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SessionManager().initialize(onSessionExpired: _handleSessionExpired);
+    SessionManager().onUserActivity();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkSession();
+    }
+  }
+
+  Future<void> _checkSession() async {
+    final valid = await SessionManager().checkSessionOnResume();
+    if (!valid && mounted) {
+      _handleSessionExpired();
+    }
+  }
+
+  void _handleSessionExpired() async {
+    if (!mounted) return;
+    await TokenStorage().clearAll();
+    SessionManager().dispose();
+    if (mounted) {
+      Get.offAll(() => const RoleSelectionScreen());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +78,10 @@ class _BarberMainShellState extends State<BarberMainShell> {
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
+          onTap: (index) {
+            SessionManager().onUserActivity();
+            setState(() => _currentIndex = index);
+          },
           backgroundColor: Colors.transparent,
           elevation: 0,
           type: BottomNavigationBarType.fixed,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../../core/session/session_manager.dart';
 import '../../role_selection/presentation/role_selection_screen.dart';
 import '../../main_shell/presentation/main_shell.dart';
 import '../../barber_dashboard/presentation/barber_main_shell.dart';
@@ -78,6 +79,14 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     if (isLoggedIn) {
+      final sessionValid = await SessionManager().checkSessionOnResume();
+      if (!sessionValid) {
+        await tokenStorage.clearAll();
+        if (!mounted) return;
+        Get.offAll(() => const RoleSelectionScreen());
+        return;
+      }
+
       final role = await tokenStorage.getRole();
       if (role == 'Barber') {
         // Check if barber account is active

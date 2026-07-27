@@ -98,6 +98,19 @@ class TokenStorage {
 
   Future<void> savePhoneNumber(String phoneNumber) async => _write(_phoneNumberKey, phoneNumber);
 
+  static const _lastActiveKey = 'last_active_timestamp';
+
+  Future<void> updateLastActive() async {
+    await _write(_lastActiveKey, DateTime.now().millisecondsSinceEpoch.toString());
+  }
+
+  Future<DateTime?> getLastActive() async {
+    final value = await _read(_lastActiveKey);
+    if (value == null) return null;
+    final ms = int.tryParse(value);
+    return ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
+  }
+
   Future<String?> getCity() async => _read('city');
 
   Future<void> saveCity(String city) async => _write('city', city);

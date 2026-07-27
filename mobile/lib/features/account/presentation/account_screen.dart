@@ -5,7 +5,8 @@ import '../../../core/theme/theme_controller.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/image_helper.dart';
-import '../../splash/presentation/splash_screen.dart';
+import '../../../core/session/session_manager.dart';
+import '../../role_selection/presentation/role_selection_screen.dart';
 import '../../edit_profile/presentation/edit_profile_screen.dart';
 import '../../bookings/presentation/customer_help_support_screen.dart';
 import '../../favorites/presentation/favorites_screen.dart';
@@ -237,12 +238,9 @@ class _AccountScreenState extends State<AccountScreen> {
         onPressed: () async {
           final tokenStorage = TokenStorage();
           await tokenStorage.clearAll();
+          SessionManager().dispose();
           if (context.mounted) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const SplashScreen()),
-              (route) => false,
-            );
+            Get.offAll(() => const RoleSelectionScreen());
           }
         },
         style: OutlinedButton.styleFrom(
