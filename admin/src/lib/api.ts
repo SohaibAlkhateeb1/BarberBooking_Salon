@@ -128,6 +128,10 @@ export async function toggleBarberActive(token: string, id: string) {
   return apiFetch(`/api/admin/barbers/${id}/toggle-active`, token, { method: "PUT" });
 }
 
+export async function toggleCustomerActive(token: string, id: string) {
+  return apiFetch(`/api/admin/customers/${id}/toggle-active`, token, { method: "PUT" });
+}
+
 export interface Booking {
   id: string;
   customerName: string;
@@ -191,6 +195,7 @@ export interface Subscription {
   currentBookingsCount: number;
   shopName: string;
   ownerName: string;
+  ownerPhone: string;
 }
 
 export interface SubscriptionStats {

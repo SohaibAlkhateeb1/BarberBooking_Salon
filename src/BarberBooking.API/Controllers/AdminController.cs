@@ -273,6 +273,26 @@ public class AdminController : ControllerBase
         });
     }
 
+    [HttpPut("customers/{id}/toggle-active")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ToggleCustomerActive(Guid id)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == id && u.Role == "Customer");
+
+        if (user == null)
+            return NotFound(new { message = "الزبون غير موجود" });
+
+        user.IsActive = !user.IsActive;
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = user.IsActive ? "تم تفعيل الزبون" : "تم تعطيل الزبون",
+            isActive = user.IsActive
+        });
+    }
+
     [HttpGet("customers")]
     public async Task<IActionResult> GetCustomers([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {

@@ -202,6 +202,7 @@ export default function SubscriptionsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>المشترك</TableHead>
+                  <TableHead>الهاتف</TableHead>
                   <TableHead>Plan</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Amount</TableHead>
@@ -220,6 +221,7 @@ export default function SubscriptionsPage() {
                       <div className="font-medium">{sub.ownerName}</div>
                       <div className="text-xs text-muted-foreground">{sub.shopName}</div>
                     </TableCell>
+                    <TableCell className="text-sm">{sub.ownerPhone}</TableCell>
                     <TableCell>{getPlanBadge(sub.planName)}</TableCell>
                     <TableCell>{getStatusBadge(sub.status)}</TableCell>
                     <TableCell>{sub.amountPaid.toLocaleString()} ₪</TableCell>

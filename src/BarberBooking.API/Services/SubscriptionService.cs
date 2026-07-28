@@ -539,6 +539,7 @@ public class SubscriptionService : ISubscriptionService
                 HasPrioritySupport = sub.SubscriptionPlan.HasPrioritySupport,
                 ShopName = sub.BarberProfile.ShopName,
                 OwnerName = sub.BarberProfile.User.FullName,
+                OwnerPhone = sub.BarberProfile.User.PhoneNumber,
                 CurrentBookingsCount = bookingCount
             });
         }

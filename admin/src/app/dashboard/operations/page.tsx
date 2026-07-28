@@ -356,6 +356,7 @@ export default function OperationsCenterPage() {
               <TableHead>النوع</TableHead>
               <TableHead>العنوان</TableHead>
               <TableHead>المرسل</TableHead>
+              <TableHead>الهاتف</TableHead>
               <TableHead>الأولوية</TableHead>
               <TableHead>الحالة</TableHead>
               <TableHead>التاريخ</TableHead>
@@ -364,9 +365,9 @@ export default function OperationsCenterPage() {
           </TableHeader>
           <TableBody>
             {ticketLoading ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">جاري التحميل...</TableCell></TableRow>
             ) : tickets.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">لا توجد تذاكر</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">لا توجد تذاكر</TableCell></TableRow>
             ) : tickets.map((ticket) => (
               <TableRow key={ticket.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewTicket(ticket)}>
                 <TableCell className="font-mono text-xs">{ticket.ticketNumber}</TableCell>
@@ -377,6 +378,7 @@ export default function OperationsCenterPage() {
                   <UserBadge role={ticket.userRole ?? (ticket.barberName ? "Barber" : "Customer")} />
                   <span className="text-xs text-muted-foreground block mt-0.5">{ticket.userName}</span>
                 </TableCell>
+                <TableCell className="text-sm font-mono">{ticket.userPhone || "-"}</TableCell>
                 <TableCell><PriorityBadge priority={ticket.priority} /></TableCell>
                 <TableCell><StatusBadge status={ticket.status} /></TableCell>
                 <TableCell className="text-xs whitespace-nowrap">{new Date(ticket.createdAt).toLocaleDateString("ar-EG")}</TableCell>
@@ -404,6 +406,7 @@ export default function OperationsCenterPage() {
             relatedEntityType: "SupportTicket",
             relatedEntityId: ticketDetail.id,
             message: ticketDetail.description,
+            phone: ticketDetail.userPhone,
           }}
           onClose={() => { setSelectedTicket(null); setTicketDetail(null); }}
           actions={

@@ -28,6 +28,7 @@ public class CurrentSubscriptionDto
     // Barber info
     public string ShopName { get; set; } = string.Empty;
     public string OwnerName { get; set; } = string.Empty;
+    public string OwnerPhone { get; set; } = string.Empty;
 
     // Current usage
     public int CurrentServicesCount { get; set; }

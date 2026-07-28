@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getCustomers, unblockCustomer, type Customer } from "@/lib/api";
+import { getCustomers, unblockCustomer, toggleCustomerActive, type Customer } from "@/lib/api";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,14 @@ export default function CustomersPage() {
     if (!token) return;
     try {
       await unblockCustomer(token, id);
+      loadCustomers(page);
+    } catch {}
+  };
+
+  const handleToggleActive = async (id: string) => {
+    if (!token) return;
+    try {
+      await toggleCustomerActive(token, id);
       loadCustomers(page);
     } catch {}
   };
@@ -106,15 +114,24 @@ export default function CustomersPage() {
                 </TableCell>
                 <TableCell>{new Date(c.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>
-                  {c.isBookingBlocked && (
+                  <div className="flex gap-1">
                     <Button
-                      variant="outline"
+                      variant={c.isActive ? "destructive" : "default"}
                       size="sm"
-                      onClick={() => handleUnblock(c.id)}
+                      onClick={() => handleToggleActive(c.id)}
                     >
-                      Unblock
+                      {c.isActive ? "Deactivate" : "Activate"}
                     </Button>
-                  )}
+                    {c.isBookingBlocked && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUnblock(c.id)}
+                      >
+                        Unblock
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
