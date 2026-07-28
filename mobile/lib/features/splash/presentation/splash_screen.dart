@@ -9,6 +9,7 @@ import '../../main_shell/presentation/main_shell.dart';
 import '../../barber_dashboard/presentation/barber_main_shell.dart';
 import '../../barber_dashboard/presentation/pending_approval_screen.dart';
 import '../../auth/presentation/otp_verification_screen.dart';
+import '../../auth/presentation/reset_password_screen.dart';
 import '../../../core/network/api_client.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -71,6 +72,13 @@ class _SplashScreenState extends State<SplashScreen>
     if (pendingPhone != null && pendingPhone.isNotEmpty) {
       if (!mounted) return;
       Get.offAll(() => OtpVerificationScreen(phoneNumber: pendingPhone));
+      return;
+    }
+
+    final pendingForgotPhone = await tokenStorage.getPendingForgotPasswordPhone();
+    if (pendingForgotPhone != null && pendingForgotPhone.isNotEmpty) {
+      if (!mounted) return;
+      Get.offAll(() => ResetPasswordScreen(phoneNumber: pendingForgotPhone));
       return;
     }
 

@@ -129,4 +129,12 @@ class TokenStorage {
     final value = await _read('longitude');
     return value != null ? double.tryParse(value) : null;
   }
+
+  static const _pendingForgotPasswordPhoneKey = 'pending_forgot_password_phone';
+
+  Future<void> savePendingForgotPasswordPhone(String phone) async => _write(_pendingForgotPasswordPhoneKey, phone);
+
+  Future<String?> getPendingForgotPasswordPhone() async => _read(_pendingForgotPasswordPhoneKey);
+
+  Future<void> clearPendingForgotPasswordPhone() async => _delete(_pendingForgotPasswordPhoneKey);
 }

@@ -6,6 +6,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_responsive.dart';
 import '../../../core/animations/app_animations.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/token_storage.dart';
 import '../../../core/utils/error_extractor.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/password_field.dart';
@@ -53,6 +54,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     try {
       final apiClient = ApiClient();
       await apiClient.dio.post('/api/auth/reset-password', data: {'phoneNumber': widget.phoneNumber, 'code': code, 'newPassword': _passwordController.text});
+      await TokenStorage().clearPendingForgotPasswordPhone();
       setState(() { _successMessage = 'تم تغيير كلمة المرور بنجاح'; _errorMessage = ''; });
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) { Get.offAll(() => const LoginScreen()); }

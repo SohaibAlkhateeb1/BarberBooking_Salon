@@ -5,6 +5,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_responsive.dart';
 import '../../../core/animations/app_animations.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/token_storage.dart';
 import '../../../core/utils/error_extractor.dart';
 import '../../../core/widgets/app_button.dart';
 import 'reset_password_screen.dart';
@@ -44,6 +45,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     try {
       final apiClient = ApiClient();
       await apiClient.dio.post('/api/auth/forgot-password', data: {'phoneNumber': phone});
+
+      await TokenStorage().savePendingForgotPasswordPhone(phone);
 
       setState(() {
         _successMessage = 'تم إرسال رمز التحقق';
