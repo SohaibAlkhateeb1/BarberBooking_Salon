@@ -282,6 +282,10 @@ export default function OperationsCenterPage() {
   };
 
   const extractUser = (message: string) => {
+    // Format 1: "الزبون {name} ({phone}) ..."
+    const format1 = message.match(/الزبون\s+(.+?)\s*\(([^)]+)\)/);
+    if (format1) return { name: format1[1]?.trim() || "", phone: format1[2]?.trim() || "" };
+    // Format 2: "الاسم: {name}\nالهاتف: {phone}"
     const nameMatch = message.match(/الاسم:\s*([^\n]+)/);
     const phoneMatch = message.match(/الهاتف:\s*([^\n]+)/);
     return { name: nameMatch?.[1]?.trim() || "", phone: phoneMatch?.[1]?.trim() || "" };
