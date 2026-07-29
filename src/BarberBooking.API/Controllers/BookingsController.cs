@@ -85,6 +85,7 @@ public class BookingsController : ControllerBase
             : DateTime.SpecifyKind(dto.BookingDate, DateTimeKind.Utc);
 
         var totalPrice = barberServices.Sum(s => s.Price);
+        var totalDuration = barberServices.Sum(s => s.DurationInMinutes);
         var serviceNames = string.Join(" + ", barberServices.Select(s => s.Name));
 
         var booking = new Booking
@@ -102,7 +103,8 @@ public class BookingsController : ControllerBase
             PaymentMethod = "cash",
             Notes = dto.Notes,
             PromoCode = dto.PromoCode,
-            ServiceNames = serviceNames
+            ServiceNames = serviceNames,
+            ServiceDurationMinutes = totalDuration
         };
 
         _context.Bookings.Add(booking);
@@ -196,7 +198,7 @@ public class BookingsController : ControllerBase
             shopLogoUrl = b.BarberProfile.ShopLogoUrl,
             serviceName = b.ServiceNames ?? b.BarberService.Name,
             servicePrice = b.BarberService.Price,
-            serviceDuration = b.BarberService.DurationInMinutes,
+            serviceDuration = b.ServiceDurationMinutes > 0 ? b.ServiceDurationMinutes : b.BarberService.DurationInMinutes,
             bookingDate = b.BookingDate,
             bookingTime = b.BookingTime.ToString(@"hh\:mm"),
             totalPrice = b.TotalPrice,
@@ -242,7 +244,7 @@ public class BookingsController : ControllerBase
             shopCity = booking.BarberProfile.City,
             serviceName = booking.ServiceNames ?? booking.BarberService.Name,
             servicePrice = booking.BarberService.Price,
-            serviceDuration = booking.BarberService.DurationInMinutes,
+            serviceDuration = booking.ServiceDurationMinutes > 0 ? booking.ServiceDurationMinutes : booking.BarberService.DurationInMinutes,
             bookingDate = booking.BookingDate,
             bookingTime = booking.BookingTime.ToString(@"hh\:mm"),
             totalPrice = booking.TotalPrice,
