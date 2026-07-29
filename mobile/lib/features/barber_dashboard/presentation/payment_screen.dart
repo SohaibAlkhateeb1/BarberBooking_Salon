@@ -7,6 +7,7 @@ import '../../../core/animations/app_animations.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/error_extractor.dart';
 import 'pending_approval_screen.dart';
+import 'package:get/get.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String planName;
@@ -133,7 +134,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              'تم استقبال طلبك',
+              widget.isUpgrade ? 'تم استقبال طلب الترقية' : 'تم استقبال طلبك',
               style: TextStyle(
                 color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                 fontSize: 20,
@@ -143,7 +144,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'تم استقبال طلبك للمراجعة. سيتم الرد عليك قريباً لتفعيل حسابك.',
+              widget.isUpgrade
+                  ? 'تم إرسال طلب ترقية الخطة للمراجعة. سيتم تفعيل الخطة الجديدة بعد موافقة الإدارة.'
+                  : 'تم استقبال طلبك للمراجعة. سيتم الرد عليك قريباً لتفعيل حسابك.',
               style: TextStyle(
                 color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                 fontSize: 14,
@@ -180,11 +183,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
             height: 48,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PendingApprovalScreen()),
-                  (route) => false,
-                );
+                if (widget.isUpgrade) {
+                  Navigator.of(ctx).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم إرسال طلب الترقية للمراجعة'), backgroundColor: AppColors.success),
+                  );
+                  Navigator.of(context).pop();
+                } else {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PendingApprovalScreen()),
+                    (route) => false,
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,

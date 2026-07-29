@@ -433,8 +433,8 @@ class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
                   Text('الفرق المالي: ${priceDiff.toInt()}₪', style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
                 const SizedBox(height: 12),
-                const Text('• سيتم تفعيل الخطة الجديدة مباشرة بعد تأكيد الدفع'),
-                const Text('• ستصبح جميع الميزات متاحة فور التفعيل'),
+                const Text('• سيتم إرسال طلب الترقية للمراجعة'),
+                const Text('• سيتم تفعيل الخطة الجديدة بعد موافقة الإدارة'),
               ],
             ),
             actions: [

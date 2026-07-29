@@ -18,6 +18,7 @@ public class Booking : BaseEntity
     public string PaymentStatus { get; set; } = "Unpaid";
     public string PaymentMethod { get; set; } = "cash";
     public DateTime? PaidAt { get; set; }
+    public string? ServiceNames { get; set; }
 
     // Reschedule tracking
     public int RescheduleCount { get; set; } = 0;

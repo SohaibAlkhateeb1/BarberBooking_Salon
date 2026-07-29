@@ -82,7 +82,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
       });
     }
     try {
-      final allBookings = await _bookingsService.getMyBookings();
+      final allBookings = await _bookingsService.getMyBookings(forceRefresh: true);
       if (mounted) {
         setState(() {
           _active = allBookings.where((b) =>
@@ -178,17 +178,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
                           message: _error,
                           onRetry: _loadBookings,
                         )
-                      : RefreshIndicator(
-                          onRefresh: _loadBookings,
-                          color: AppColors.primary,
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildBookingsList(_active),
-                              _buildBookingsList(_completed),
-                              _buildBookingsList(_cancelled),
-                            ],
-                          ),
+                      : TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildBookingsList(_active),
+                            _buildBookingsList(_completed),
+                            _buildBookingsList(_cancelled),
+                          ],
                         ),
             ),
           ],
@@ -237,25 +233,30 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
   }
 
   Widget _buildBookingsList(List<BookingModel> bookings) {
-    if (bookings.isEmpty) {
-      return const EmptyState(
-        type: EmptyStateType.bookings,
-        title: 'لا توجد مواعيد',
-        subtitle: 'لم تقم بأي حجز حتى الآن',
-      );
-    }
     return RefreshIndicator(
       onRefresh: _loadBookings,
       color: AppColors.primary,
-      child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: AppSpacing.pageAll,
-        itemCount: bookings.length,
-        itemBuilder: (context, index) => FadeIn(
-          delay: Duration(milliseconds: index * 80),
-          child: _buildBookingCard(bookings[index]),
-        ),
-      ),
+      child: bookings.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(height: 100),
+                EmptyState(
+                  type: EmptyStateType.bookings,
+                  title: 'لا توجد مواعيد',
+                  subtitle: 'لم تقم بأي حجز حتى الآن',
+                ),
+              ],
+            )
+          : ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: AppSpacing.pageAll,
+              itemCount: bookings.length,
+              itemBuilder: (context, index) => FadeIn(
+                delay: Duration(milliseconds: index * 80),
+                child: _buildBookingCard(bookings[index]),
+              ),
+            ),
     );
   }
 

@@ -101,7 +101,8 @@ public class BookingsController : ControllerBase
             PaymentStatus = "Unpaid",
             PaymentMethod = "cash",
             Notes = dto.Notes,
-            PromoCode = dto.PromoCode
+            PromoCode = dto.PromoCode,
+            ServiceNames = serviceNames
         };
 
         _context.Bookings.Add(booking);
@@ -193,7 +194,7 @@ public class BookingsController : ControllerBase
             barberName = b.BarberProfile.User.FullName,
             shopName = b.BarberProfile.ShopName,
             shopLogoUrl = b.BarberProfile.ShopLogoUrl,
-            serviceName = b.BarberService.Name,
+            serviceName = b.ServiceNames ?? b.BarberService.Name,
             servicePrice = b.BarberService.Price,
             serviceDuration = b.BarberService.DurationInMinutes,
             bookingDate = b.BookingDate,
@@ -239,7 +240,7 @@ public class BookingsController : ControllerBase
             shopName = booking.BarberProfile.ShopName,
             shopAddress = booking.BarberProfile.Address,
             shopCity = booking.BarberProfile.City,
-            serviceName = booking.BarberService.Name,
+            serviceName = booking.ServiceNames ?? booking.BarberService.Name,
             servicePrice = booking.BarberService.Price,
             serviceDuration = booking.BarberService.DurationInMinutes,
             bookingDate = booking.BookingDate,

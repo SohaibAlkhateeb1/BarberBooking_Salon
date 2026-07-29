@@ -196,10 +196,12 @@ class BookingsService {
     return BookingDetailModel.fromJson(response.data);
   }
 
-  Future<List<BookingModel>> getMyBookings({String? status}) async {
+  Future<List<BookingModel>> getMyBookings({String? status, bool forceRefresh = false}) async {
     final cacheKey = status != null ? 'my_bookings_$status' : 'my_bookings_all';
-    final cached = ApiCache().get<List<BookingModel>>(cacheKey);
-    if (cached != null) return cached;
+    if (!forceRefresh) {
+      final cached = ApiCache().get<List<BookingModel>>(cacheKey);
+      if (cached != null) return cached;
+    }
 
     final response = await _apiClient.dio.get(
       '/api/bookings/my',
