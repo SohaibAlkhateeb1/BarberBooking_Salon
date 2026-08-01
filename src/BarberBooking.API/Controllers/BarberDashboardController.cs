@@ -293,7 +293,10 @@ public class BarberDashboardController : ControllerBase
 
         booking.Status = "InProgress";
         booking.StartedAt = DateTime.UtcNow;
-        booking.ServiceDurationMinutes = booking.BarberService.DurationInMinutes;
+        if (booking.ServiceDurationMinutes <= 0)
+        {
+            booking.ServiceDurationMinutes = booking.BarberService.DurationInMinutes;
+        }
         await _context.SaveChangesAsync();
 
         // In-app notification
