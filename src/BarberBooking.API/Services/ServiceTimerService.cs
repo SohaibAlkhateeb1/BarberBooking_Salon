@@ -30,7 +30,7 @@ public class ServiceTimerService : BackgroundService
                 _logger.LogError(ex, "Error in ServiceTimerService");
             }
 
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
         }
     }
 

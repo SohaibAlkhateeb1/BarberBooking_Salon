@@ -84,11 +84,11 @@ builder.Services.AddControllers()
     });
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
-    options.SerializerOptions.MaxDepth = 64;
+    options.SerializerOptions.MaxDepth = 16;
 });
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 52428800; // 50MB
+    options.Limits.MaxRequestBodySize = 5242880; // 5MB (reduced from 50MB)
 });
 
 // --- CORS (Limited to Flutter + Admin origins) ---
@@ -208,42 +208,45 @@ builder.Services.AddSignalR();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<BarberBookingDbContext>();
 
-// --- Swagger with JWT ---
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+// --- Swagger with JWT (only in Development) ---
+if (builder.Environment.IsDevelopment())
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
     {
-        Title = "BarberBooking API",
-        Version = "v1",
-        Description = "Barber Booking Platform API"
-    });
-
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter your JWT token"
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+        options.SwaggerDoc("v1", new OpenApiInfo
         {
-            new OpenApiSecurityScheme
+            Title = "BarberBooking API",
+            Version = "v1",
+            Description = "Barber Booking Platform API"
+        });
+
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Enter your JWT token"
+        });
+
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
             {
-                Reference = new OpenApiReference
+                new OpenApiSecurityScheme
                 {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
     });
-});
+}
 
 // --- Background Services ---
 builder.Services.AddHostedService<BookingReminderService>();
